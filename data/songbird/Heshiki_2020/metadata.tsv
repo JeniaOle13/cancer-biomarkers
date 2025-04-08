@@ -1,0 +1,12 @@
+sampleid	response	dataset	cancer_type
+SRR8387659	NR	Heshiki_2020	Gastrointestinal tract cancer
+SRR8387676	NR	Heshiki_2020	Ovarian cancer
+SRR8387677	NR	Heshiki_2020	Breast cancer
+SRR8387679	R	Heshiki_2020	NSLC
+SRR8387681	R	Heshiki_2020	Ovarian cancer
+SRR8387683	R	Heshiki_2020	Gastrointestinal tract cancer
+SRR8387691	R	Heshiki_2020	Breast cancer
+SRR8387697	NR	Heshiki_2020	Breast cancer
+SRR8387707	NR	Heshiki_2020	Gastrointestinal tract cancer
+SRR8387710	R	Heshiki_2020	Gastrointestinal tract cancer
+SRR8387712	R	Heshiki_2020	Breast cancer
