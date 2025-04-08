@@ -1,0 +1,247 @@
+---
+title: "cancer-markers"
+format: html
+editor: visual
+---
+
+# Materials and methods
+
+
+```{r}
+#| include: false
+library(ggplot2)
+library(ggpubr)
+library(phyloseq)
+library(microViz)
+library(vegan)
+library(stringr)
+library(Maaslin2)
+library(RColorBrewer)
+library(lmerTest)
+library(multcomp)
+library(clusterProfiler)
+library(enrichplot)
+library(fgsea)
+
+library(DT)
+library(downloadthis)
+```
+
+```{r}
+#| include: false
+
+# OGU table
+otu_table <- read.csv("data/mags_relab.tsv", sep = "\t", row.names = 1)
+
+# Taxonomy table
+taxonomy <- read.csv("data/taxonomy.tsv", sep = "\t", row.names = 1)
+
+kingdom <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[1])
+phylum <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[2])
+class_t <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[3])
+order_t <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[4])
+family_t <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[5])
+genus <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[6])
+genus[genus == "g__"] <- paste0(family_t[which(genus == "g__")], "_unknown")
+
+phylum <- sub("p__", "", phylum)
+genus <- sub("g__", "", genus)
+
+tax_table <- data.frame(kingdom, phylum, class = class_t, order = order_t, family = family_t, genus)
+rownames(tax_table) <- rownames(taxonomy)
+
+tax_table$phylum <- sapply(str_split(tax_table$phylum, "_"), function(x) x[1])
+
+# Metadata
+meta_data <- read.csv("data/metadata.tsv", sep = "\t", row.names = 1)
+meta_data$Cancer.Type[meta_data$Cancer.Type == ""] <- "Melanoma"
+colnames(meta_data)[3] <- "cancer_type"
+meta_data_t <- cbind(sampleid = rownames(meta_data), meta_data)
+meta_data_t <- meta_data_t[order(meta_data_t$dataset, decreasing = F),]
+rownames(meta_data_t) <- 1:nrow(meta_data_t)
+
+# DEICODE data
+distance_matrics <- read.csv("data/rpca/distance-matrix.tsv", sep = "\t", row.names = 1)
+ordination <- read.csv("data/rpca/ordination.txt", sep = "\t")
+
+# Biomarkers
+mag.biomarkers <- read.csv("data/mag.biomarkers.tsv", sep = "\t")
+
+# Songbird data
+songbird_Frankel_2017 <- read.csv("data/songbird/Frankel_2017/differentials.tsv", sep = "\t")
+songbird_Gopalakrishnan_2019 <- read.csv("data/songbird/Gopalakrishnan_2019/differentials.tsv", sep = "\t")
+songbird_Matson_2019 <- read.csv("data/songbird/Matson_2019/differentials.tsv", sep = "\t")
+
+songbird_Spencer_2021 <- read.csv("data/songbird/Spencer_2021/differentials.tsv", sep = "\t")
+songbird_Lee_2022 <- read.csv("data/songbird/Lee_2022/differentials.tsv", sep = "\t")
+
+songbird_Liu_2022 <- read.csv("data/songbird/Liu_2022/differentials.tsv", sep = "\t")
+songbird_McCulloch_2022 <- read.csv("data/songbird/McCulloch_2022/differentials.tsv", sep = "\t")
+songbird_Peng_2020 <- read.csv("data/songbird/Peng_2020/differentials.tsv", sep = "\t")
+songbird_Tsakmaklis_2023 <- read.csv("data/songbird/Tsakmaklis_2023/differentials.tsv", sep = "\t")
+songbird_Gunjur_2024 <- read.csv("data/songbird/Gunjur_2024/differentials.tsv", sep = "\t")
+songbird_Heshiki_2020 <- read.csv("data/songbird/Heshiki_2020/differentials.tsv", sep = "\t")
+
+# Clusterization results
+body_site <- read.csv("data/body_ogu.tsv", sep = "\t")[-2]
+colnames(body_site)[2] <- "site"
+body_site$genome <- sub(".fa", "", body_site$genome)
+
+food <- read.csv("data/food_ogu.txt", sep = "\t", header = F)
+colnames(food) <- "genome"
+food$site <- "food"
+food$genome <- sub(".fa", "", food$genome)
+```
+
+# Results
+## Quality control
+```{r}
+#| include: false
+phyobj <- phyloseq(otu_table(otu_table, taxa_are_rows=FALSE),
+                        sample_data(meta_data),
+                        tax_table(as.matrix(tax_table)))
+
+phyobj_100 <- transform_sample_counts(phyobj, function(x) 100 * x/sum(x))
+```
+
+# Data overview
+```{r}
+#| echo: false
+datatable(meta_data_t, 
+          caption = "Table 1. Metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+## Taxonomic composition
+```{r}
+#| include: false
+phylum_barplot <- phyobj_100 %>% comp_barplot("phylum", merge_other = FALSE, label = NULL, n_taxa = 5)+
+    facet_wrap(vars(response), scales = "free", nrow = 2)+
+    theme_minimal()+
+    theme(legend.position = "right")
+
+genus_barplot <- phyobj_100 %>% comp_barplot("genus", merge_other = FALSE, label = NULL, n_taxa = 10)+
+    facet_wrap(~response, scales = "free", nrow = 2)+
+    theme_minimal()+
+    theme(legend.position = "right")
+```
+
+```{r fig.width=15, fig.height=5}
+#| echo: false
+download_this(
+  phylum_barplot,
+  output_name = "phylum_barplot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=15, fig.height=5}
+#| echo: false
+#| fig-cap: Figure 2. Phylum distribution per experimental samples stratified by response variable.
+phylum_barplot
+```
+
+```{r fig.width=15, fig.height=5}
+#| echo: false
+download_this(
+  genus_barplot,
+  output_name = "genus_barplot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=15, fig.height=5}
+#| echo: false
+#| fig-cap: Figure 3. Genus distribution per experimental samples stratified by response variable.
+genus_barplot
+```
+
+## Alpha diversity
+```{r}
+#| include: false
+shannon <- diversity(otu_table, index = "shannon")
+shannon <- as.data.frame(shannon)
+shannon <- cbind(rownames(shannon), shannon)
+
+alpha.df <- merge(cbind(sampleid = rownames(meta_data), meta_data), shannon, by = 1)
+
+shannon_boxplot <- ggplot(alpha.df)+
+    geom_boxplot(mapping = aes(response, shannon), outlier.colour = "white", width = 0.75)+
+    geom_jitter(mapping = aes(response, shannon, col = response), width = 0.25)+
+    theme_bw()+
+    theme(legend.position = "none")+
+    scale_color_brewer(palette = "Set1")+
+    xlab("Shannon index")+
+    ylab("Dataset")
+
+lmer.shannon <- lmer(shannon ~ response + (1|dataset), data=alpha.df)
+```
+
+```{r fig.width=3.5, fig.height=4.5}
+#| echo: false
+download_this(
+  shannon_boxplot,
+  output_name = "shannon_boxplot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=3.5, fig.height=4.5}
+#| echo: false
+#| fig-cap: Figure 4. Shannon diversity index distribution stratified by response.
+shannon_boxplot
+```
+
+```{r}
+#| echo: false
+summary(glht(lmer.shannon, linfct = mcp(response = "Tukey")), test = adjusted("bonferroni"))
+shapiro.test(residuals(lmer.shannon))
+```
+
+## Beta diversity
+```{r}
+#| include: false
+ordination <- merge(cbind(sampleid = rownames(meta_data), meta_data), ordination, by = 1)
+
+mds_plot <- ggplot(ordination)+
+    geom_point(mapping = aes(PC1, PC2, shape = response), size = 3.5, stroke = 1)+
+    geom_point(mapping = aes(PC1, PC2, col = response, shape = response), size = 3)+
+    theme_bw()+
+    stat_ellipse(mapping = aes(PC1, PC2, col = response))+
+    scale_color_brewer(palette = "Set1")+
+    theme(legend.position = "bottom")+
+    xlab("PC1 (54%)")+
+    ylab("PC2 (34%)")
+```
+
+```{r fig.width=5, fig.height=5.5}
+#| echo: false
+download_this(
+  mds_plot,
+  output_name = "mds_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=5, fig.height=5.5}
+#| echo: false
+#| fig-cap: Figure 5. Shannon diversity index distribution stratified by response.
+mds_plot
+```
+
+```{r}
+#| echo: false
+adonis2(distance_matrics ~ dataset + response + cancer_type, data = meta_data, permutations = 99, by = "margin")
+```
+
