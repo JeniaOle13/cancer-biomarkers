@@ -5,23 +5,70 @@ editor: visual
 ---
 
 # Materials and methods
+## Metagenomic data
 
+## OGU table contruction
+<p style="text-align: justify;">
+All 627 stool metagenomic samples were download from NCBI/EBI databases using kingfisher v0.4.1 (<https://github.com/wwood/kingfisher-download>). Quality assessment of data was performed using FastQC v0.12.1 (<https://www.bioinformatics.babraham.ac.uk/projects/fastqc>). Raw reads were processed using fastp v0.23.4 to remove low-quality sequences [Chen et al., 2018]. Human sequences present in the metagenomic samples were eliminated using hisat2 [Kim et al., 2019] and the human genome GRCh37 (Release 47) (<https://www.gencodegenes.org/human>). Metagenomic assembly was performed using MEGAHIT v1.2.9 [Li et al., 2015] with further filtering by length > 1000 bp. Hisat2 v2.2 was used for alignment to metagenomic reads to assembly filtered contigs [Kim et al. 2019]. Binning process were implemented as two stages 1) metagenomic binning using MetaBat2 v2.12.1 [Kang et al., 2019], MaxBin2 v2.2.7 [Wu et al., 2016], and Semibin2 v2.1.0 [Pan et al., 2023] tools; 2) DAS Tool v1.1.7 to enhance binning quality [Sieber et al, 2018]. Quality control of binning was performed using CheckM v1.2.3 [Parks et al., 2015]. Deprecation at 98% nucleotide identity of bins was performed using dRep v3.4.5 [Olm et al., 2017]. Taxonomic annotation of bins was performed using GTDBTk v2.1.1 [Chaumeil et al., 2022] with GTDB r207 [Parks et al, 2022]. Samtools v1.17 [Li et al., 2009], bedtools v2.31.0 [Quinlan et al., 2010] and bbmap v39.06 [Bushnell et al., 2014] were used for additional manipulation. InStrain v1.9.0 was used to obtain OGU abundance profiles [Olm et al, 2021].
+<p>
+
+## Marker OGU discovery
+<p style="text-align: justify;">
+The identification of OGUs associated with immunotherapy outcomes followed an established analytical framework from our previous work [Olekhnovich et al., 2023; Zakharevich et al., 2024]. Differential rankings analysis was first performed using Songbird [Morton et al., 2019] to identify MAGs showing significant abundance variations between response groups, applying a conservative absolute differential value threshold of > 0.3. For candidate MAGs meeting this criterion, we subsequently calculated log-ratio abundances using Qurro [Fedarko et al., 2020] and determined statistical significance through Wilcoxon rank-sum tests implemented in the R statistical environment. The biomarker selection process incorporated stringent cross-validation criteria to ensure robust identification of clinically relevant microbial signatures. MAGs demonstrating consistent positive associations with therapeutic response across multiple datasets were retained as potential beneficial biomarkers, while any evidence of negative association with treatment outcome in any dataset resulted in automatic exclusion regardless of other positive associations. This approach enabled simultaneous identification of two clinically meaningful biomarker categories: microbial taxa positively correlated with successful immunotherapy outcomes and those associated with adverse therapeutic responses. The methodology emphasizes reproducibility through multi-dataset validation and maintains rigorous standards for biomarker qualification by requiring consistent directional effects across independent cohorts.
+<p>
+
+lmer 
+multicomp
+
+logistic regression
+
+clusterProfilers
+
+ggseavis
+
+
+## Functional profiling of marker OGU
+MetaCerberus
+
+logistic resgression
+
+clusterProfilers
+
+## Data availability
+
+## References
+1) [Chen, Shifu, et al. "fastp: an ultra-fast all-in-one FASTQ preprocessor." Bioinformatics 34.17 (2018): i884-i890.](https://academic.oup.com/bioinformatics/article/34/17/i884/5093234)
+2) [Li, Dinghua, et al. "MEGAHIT: an ultra-fast single-node solution for large and complex metagenomics assembly via succinct de Bruijn graph." Bioinformatics 31.10 (2015): 1674-1676.](https://academic.oup.com/bioinformatics/article/31/10/1674/177884?login=true)
+3) [Kim, Daehwan, et al. "Graph-based genome alignment and genotyping with HISAT2 and HISAT-genotype." Nature biotechnology 37.8 (2019): 907-915.](https://www.nature.com/articles/s41587-019-0201-4)
+4) [Kang, Dongwan D., et al. "MetaBAT 2: an adaptive binning algorithm for robust and efficient genome reconstruction from metagenome assemblies." PeerJ 7 (2019): e7359.](https://peerj.com/articles/7359/)
+5) [Wu, Yu-Wei, Blake A. Simmons, and Steven W. Singer. "MaxBin 2.0: an automated binning algorithm to recover genomes from multiple metagenomic datasets." Bioinformatics 32.4 (2016): 605-607.](https://academic.oup.com/bioinformatics/article/32/4/605/1744462?login=true)
+6) [Pan, Shaojun, Xing-Ming Zhao, and Luis Pedro Coelho. "SemiBin2: self-supervised contrastive learning leads to better MAGs for short-and long-read sequencing." Bioinformatics 39.Supplement_1 (2023): i21-i29.](https://academic.oup.com/bioinformatics/article/39/Supplement_1/i21/7210480?login=true)
+7) [Sieber, Christian MK, et al. "Recovery of genomes from metagenomes via a dereplication, aggregation and scoring strategy." Nature microbiology 3.7 (2018): 836-843.](https://www.nature.com/articles/s41564-018-0171-1)
+8) [Parks, Donovan H., et al. "CheckM: assessing the quality of microbial genomes recovered from isolates, single cells, and metagenomes." Genome research 25.7 (2015): 1043-1055.](https://genome.cshlp.org/content/25/7/1043.short)
+9) [Olm, Matthew R., et al. "dRep: a tool for fast and accurate genomic comparisons that enables improved genome recovery from metagenomes through de-replication." The ISME journal 11.12 (2017): 2864-2868.](https://academic.oup.com/ismej/article/11/12/2864/7537826?login=true)
+10) [Chaumeil, Pierre-Alain, et al. "GTDB-Tk v2: memory friendly classification with the genome taxonomy database." Bioinformatics 38.23 (2022): 5315-5316.](https://academic.oup.com/bioinformatics/article/38/23/5315/6758240?login=true)
+11) [Parks, Donovan H., et al. "GTDB: an ongoing census of bacterial and archaeal diversity through a phylogenetically consistent, rank normalized and complete genome-based taxonomy." Nucleic acids research 50.D1 (2022): D785-D794.](https://academic.oup.com/nar/article/50/D1/D785/6370255?login=true)
+12) [Li, Heng, et al. "The sequence alignment/map format and SAMtools." bioinformatics 25.16 (2009): 2078-2079.](https://academic.oup.com/bioinformatics/article/25/16/2078/204688?login=true)
+13) [Quinlan, Aaron R., and Ira M. Hall. "BEDTools: a flexible suite of utilities for comparing genomic features." Bioinformatics 26.6 (2010): 841-842.](https://academic.oup.com/bioinformatics/article/26/6/841/244688?login=true)
+14) [Bushnell, Brian. "BBMap: a fast, accurate, splice-aware aligner." (2014).](https://escholarship.org/uc/item/1h3515gn)
+15) [Olm, Matthew R., et al. "inStrain profiles population microdiversity from metagenomic data and sensitively detects shared microbial strains." Nature Biotechnology 39.6 (2021): 727-736.](https://www.nature.com/articles/s41587-020-00797-0)
+16) [Olekhnovich, Evgenii I., et al. "Consistent stool metagenomic biomarkers associated with the response to melanoma immunotherapy." Msystems 8.2 (2023): e01023-22.](https://journals.asm.org/doi/full/10.1128/msystems.01023-22)
+17) [Zakharevich, Natalia V., et al. "Systemic metabolic depletion of gut microbiome undermines responsiveness to melanoma immunotherapy." Life Science Alliance 7.5 (2024).](https://www.life-science-alliance.org/content/7/5/e202302480.abstract)
+18) [Morton, James T., et al. "Establishing microbial composition measurement standards with reference frames." Nature communications 10.1 (2019): 2719.](https://www.nature.com/articles/s41467-019-10656-5)
+19) [Fedarko, Marcus W., et al. "Visualizing’omic feature rankings and log-ratios using Qurro." NAR genomics and bioinformatics 2.2 (2020): lqaa023.](https://academic.oup.com/nargab/article/2/2/lqaa023/5826153?login=true)
+20) [Bolyen, Evan, et al. "Reproducible, interactive, scalable and extensible microbiome data science using QIIME 2." Nature biotechnology 37.8 (2019): 852-857.](https://www.nature.com/articles/s41587-019-0209-9)
 
 ```{r}
 #| include: false
 library(ggplot2)
 library(ggpubr)
-library(phyloseq)
-library(microViz)
-library(vegan)
+library(qiime2R)
 library(stringr)
-library(Maaslin2)
 library(RColorBrewer)
 library(lmerTest)
 library(multcomp)
 library(clusterProfiler)
-library(enrichplot)
-library(fgsea)
+library(hrbrthemes)
 
 library(DT)
 library(downloadthis)
@@ -30,10 +77,51 @@ library(downloadthis)
 ```{r}
 #| include: false
 
-# OGU table
-otu_table <- read.csv("data/mags_relab.tsv", sep = "\t", row.names = 1)
+datasets <- c("Frankel_2017", 
+              "Gopalakrishnan_2019", 
+              "Gunjur_2024", 
+              "Heshiki_2020", 
+              "Lee_2022", 
+              "Liu_2022", 
+              "Matson_2019", 
+              "McCulloch_2022", 
+              "Peng_2020", 
+              "Spencer_2021", 
+              "Tsakmaklis_2023")
+```
 
-# Taxonomy table
+```{r}
+#| include: false
+#| 
+meta_data <- NULL
+for (k in datasets){
+    df.meta <- read.csv(paste0("data/songbird/", k, "/metadata.tsv"), sep = "\t")
+    meta_data <- rbind(df.meta, meta_data)
+}
+
+```
+
+```{r}
+#| include: false
+
+ogu_table <- NULL
+for (k in datasets){
+    ogu <- read_qza(paste0("data/songbird/", k, "/ogu_table.qza"))
+    ogu <- as.data.frame(ogu$data)
+    ogu <- cbind(featureid = rownames(ogu), ogu)
+    ogu_table <- merge(ogu, ogu_table, all = T)
+}
+
+ogu_table[is.na(ogu_table)] <- 0
+rownames(ogu_table) <- ogu_table$featureid
+ogu_table <- ogu_table[-1]
+
+ogu_table <- as.data.frame(t(ogu_table))
+```
+
+```{r}
+#| include: false
+
 taxonomy <- read.csv("data/taxonomy.tsv", sep = "\t", row.names = 1)
 
 kingdom <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[1])
@@ -41,33 +129,80 @@ phylum <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[2])
 class_t <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[3])
 order_t <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[4])
 family_t <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[5])
+
 genus <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[6])
 genus[genus == "g__"] <- paste0(family_t[which(genus == "g__")], "_unknown")
 
-phylum <- sub("p__", "", phylum)
-genus <- sub("g__", "", genus)
+species <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[7])
 
-tax_table <- data.frame(kingdom, phylum, class = class_t, order = order_t, family = family_t, genus)
+kingdom <- sub("d__", "", kingdom)
+phylum <- sub("p__", "", phylum)
+class_t <- sub("c__", "", class_t)
+order_t <- sub("o__", "", order_t)
+family_t <- sub("f__", "", family_t)
+genus <- sub("g__", "", genus)
+species <- sub("s__", "", species)
+
+species <- gsub(paste(paste0("_", LETTERS), collapse = "|"), "", species)
+genus <- gsub(paste(paste0("_", LETTERS), collapse = "|"), "", genus)
+
+tax_table <- data.frame(kingdom, phylum, class = class_t, order = order_t, family = family_t, genus, species)
 rownames(tax_table) <- rownames(taxonomy)
 
 tax_table$phylum <- sapply(str_split(tax_table$phylum, "_"), function(x) x[1])
+tax_table <- tax_table[rownames(tax_table) %in% colnames(ogu_table),]
+```
 
-# Metadata
-meta_data <- read.csv("data/metadata.tsv", sep = "\t", row.names = 1)
-meta_data$Cancer.Type[meta_data$Cancer.Type == ""] <- "Melanoma"
-colnames(meta_data)[3] <- "cancer_type"
-meta_data_t <- cbind(sampleid = rownames(meta_data), meta_data)
-meta_data_t <- meta_data_t[order(meta_data_t$dataset, decreasing = F),]
-rownames(meta_data_t) <- 1:nrow(meta_data_t)
+```{r}
+#| include: false
 
-# DEICODE data
-distance_matrics <- read.csv("data/rpca/distance-matrix.tsv", sep = "\t", row.names = 1)
-ordination <- read.csv("data/rpca/ordination.txt", sep = "\t")
+raw_stat <- read.csv("data/raw_stat.tsv", sep = "\t")
+filtered_stat <- read.csv("data/filtered_stat.tsv", sep = "\t")
 
-# Biomarkers
+raw_stat_sbs <- raw_stat[c(1,2,5)]
+filtered_stat_sbs <- filtered_stat[c(1,5)]
+
+raw_stat_sbs$num_seqs <- gsub("\\,", "", raw_stat_sbs$num_seqs)
+filtered_stat_sbs$num_seqs <- gsub("\\,", "", filtered_stat_sbs$num_seqs)
+
+raw_stat_sbs$num_seqs <- as.numeric(raw_stat_sbs$num_seqs)
+filtered_stat_sbs$num_seqs <- as.numeric(filtered_stat_sbs$num_seqs)
+
+colnames(raw_stat_sbs)[3] <- "raw"
+colnames(filtered_stat_sbs)[2] <- "filtered"
+
+statistic <- merge(raw_stat_sbs, filtered_stat_sbs, by = 1)
+
+statistic$`%_filtered`<- round(100-(100*statistic$filtered/statistic$raw))
+
+statistic$raw <- round(statistic$raw/1000000)
+statistic$filtered <- round(statistic$filtered/1000000)
+
+statistic$filtered <- statistic$raw - statistic$filtered
+
+colnames(statistic)[c(3,4)] <- c("raw, mln", "filtered, mln")
+
+rownames(statistic) <- 1:nrow(statistic)
+```
+
+```{r}
+#| include: false
+
+ogu_table_t <- as.data.frame(t(ogu_table))
+ogu_table_t <- cbind(featureid = rownames(ogu_table_t), ogu_table_t)
+ogu_table_t <- merge(cbind(featureid = rownames(tax_table), tax_table), ogu_table_t, by = 1)
+ogu_table_t <- ogu_table_t[-1]
+```
+
+```{r}
+#| include: false
+
 mag.biomarkers <- read.csv("data/mag.biomarkers.tsv", sep = "\t")
+```
 
-# Songbird data
+```{r}
+#| include: false
+
 songbird_Frankel_2017 <- read.csv("data/songbird/Frankel_2017/differentials.tsv", sep = "\t")
 songbird_Gopalakrishnan_2019 <- read.csv("data/songbird/Gopalakrishnan_2019/differentials.tsv", sep = "\t")
 songbird_Matson_2019 <- read.csv("data/songbird/Matson_2019/differentials.tsv", sep = "\t")
@@ -81,8 +216,11 @@ songbird_Peng_2020 <- read.csv("data/songbird/Peng_2020/differentials.tsv", sep 
 songbird_Tsakmaklis_2023 <- read.csv("data/songbird/Tsakmaklis_2023/differentials.tsv", sep = "\t")
 songbird_Gunjur_2024 <- read.csv("data/songbird/Gunjur_2024/differentials.tsv", sep = "\t")
 songbird_Heshiki_2020 <- read.csv("data/songbird/Heshiki_2020/differentials.tsv", sep = "\t")
+```
 
-# Clusterization results
+```{r}
+#| include: false
+
 body_site <- read.csv("data/body_ogu.tsv", sep = "\t")[-2]
 colnames(body_site)[2] <- "site"
 body_site$genome <- sub(".fa", "", body_site$genome)
@@ -94,21 +232,30 @@ food$genome <- sub(".fa", "", food$genome)
 ```
 
 # Results
-## Quality control
-```{r}
-#| include: false
-phyobj <- phyloseq(otu_table(otu_table, taxa_are_rows=FALSE),
-                        sample_data(meta_data),
-                        tax_table(as.matrix(tax_table)))
+## Data overview
+<p style="text-align: justify;">
+The analysis incorporated 627 gut metagenomic profiling samples obtained from 11 independent external datasets. Patients were stratified by immunotherapy response into two groups: responders (R group, n = 365; 58.2%) and non-responders (NR group, n = 262; 41.8%). Response assessment followed RECIST 1.1 criteria, with the R group including patients showing complete response (CR), partial response (PR), or stable disease (SD) at 6-month follow-up, while the NR group comprised exclusively progressive disease (PD) cases. The study cohort received various immunotherapy regimens, including anti-PD1, anti-CTLA4, or combination therapies. Cancer type distribution revealed melanoma predominance (n = 456; 72.7%), followed by gastrointestinal cancers (n = 82; 13.1%), non-small cell lung cancer (n = 15; 2.4%), breast cancer (n = 4; 0.6%), ovarian cancer (n = 2; 0.3%), and other malignancies (n = 68; 10.8%). All samples were collected prior to treatment initiation to evaluate baseline microbiota status.
+<p>
 
-phyobj_100 <- transform_sample_counts(phyobj, function(x) 100 * x/sum(x))
-```
-
-# Data overview
 ```{r}
 #| echo: false
-datatable(meta_data_t, 
+#| message: false
+#| warning: false
+datatable(meta_data, 
           caption = "Table 1. Metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+## Quality control
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(statistic, 
+          caption = "Table 2. Quality control statistic.",
           style = "bootstrap5", 
           extensions = 'Buttons', 
           options = list(dom = 'lBfrtip',
@@ -117,131 +264,15 @@ datatable(meta_data_t,
 
 ## Taxonomic composition
 ```{r}
-#| include: false
-phylum_barplot <- phyobj_100 %>% comp_barplot("phylum", merge_other = FALSE, label = NULL, n_taxa = 5)+
-    facet_wrap(vars(response), scales = "free", nrow = 2)+
-    theme_minimal()+
-    theme(legend.position = "right")
-
-genus_barplot <- phyobj_100 %>% comp_barplot("genus", merge_other = FALSE, label = NULL, n_taxa = 10)+
-    facet_wrap(~response, scales = "free", nrow = 2)+
-    theme_minimal()+
-    theme(legend.position = "right")
-```
-
-```{r fig.width=15, fig.height=5}
 #| echo: false
-download_this(
-  phylum_barplot,
-  output_name = "phylum_barplot",
-  output_extension = ".pdf",
-  button_label = "PDF",
-  button_type = "primary"
-)
+#| message: false
+#| warning: false
+datatable(ogu_table_t, 
+          caption = "Table 3. OGU table.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
 ```
 
-```{r fig.width=15, fig.height=5}
-#| echo: false
-#| fig-cap: Figure 2. Phylum distribution per experimental samples stratified by response variable.
-phylum_barplot
-```
-
-```{r fig.width=15, fig.height=5}
-#| echo: false
-download_this(
-  genus_barplot,
-  output_name = "genus_barplot",
-  output_extension = ".pdf",
-  button_label = "PDF",
-  button_type = "primary"
-)
-```
-
-```{r fig.width=15, fig.height=5}
-#| echo: false
-#| fig-cap: Figure 3. Genus distribution per experimental samples stratified by response variable.
-genus_barplot
-```
-
-## Alpha diversity
-```{r}
-#| include: false
-shannon <- diversity(otu_table, index = "shannon")
-shannon <- as.data.frame(shannon)
-shannon <- cbind(rownames(shannon), shannon)
-
-alpha.df <- merge(cbind(sampleid = rownames(meta_data), meta_data), shannon, by = 1)
-
-shannon_boxplot <- ggplot(alpha.df)+
-    geom_boxplot(mapping = aes(response, shannon), outlier.colour = "white", width = 0.75)+
-    geom_jitter(mapping = aes(response, shannon, col = response), width = 0.25)+
-    theme_bw()+
-    theme(legend.position = "none")+
-    scale_color_brewer(palette = "Set1")+
-    xlab("Shannon index")+
-    ylab("Dataset")
-
-lmer.shannon <- lmer(shannon ~ response + (1|dataset), data=alpha.df)
-```
-
-```{r fig.width=3.5, fig.height=4.5}
-#| echo: false
-download_this(
-  shannon_boxplot,
-  output_name = "shannon_boxplot",
-  output_extension = ".pdf",
-  button_label = "PDF",
-  button_type = "primary"
-)
-```
-
-```{r fig.width=3.5, fig.height=4.5}
-#| echo: false
-#| fig-cap: Figure 4. Shannon diversity index distribution stratified by response.
-shannon_boxplot
-```
-
-```{r}
-#| echo: false
-summary(glht(lmer.shannon, linfct = mcp(response = "Tukey")), test = adjusted("bonferroni"))
-shapiro.test(residuals(lmer.shannon))
-```
-
-## Beta diversity
-```{r}
-#| include: false
-ordination <- merge(cbind(sampleid = rownames(meta_data), meta_data), ordination, by = 1)
-
-mds_plot <- ggplot(ordination)+
-    geom_point(mapping = aes(PC1, PC2, shape = response), size = 3.5, stroke = 1)+
-    geom_point(mapping = aes(PC1, PC2, col = response, shape = response), size = 3)+
-    theme_bw()+
-    stat_ellipse(mapping = aes(PC1, PC2, col = response))+
-    scale_color_brewer(palette = "Set1")+
-    theme(legend.position = "bottom")+
-    xlab("PC1 (54%)")+
-    ylab("PC2 (34%)")
-```
-
-```{r fig.width=5, fig.height=5.5}
-#| echo: false
-download_this(
-  mds_plot,
-  output_name = "mds_plot",
-  output_extension = ".pdf",
-  button_label = "PDF",
-  button_type = "primary"
-)
-```
-
-```{r fig.width=5, fig.height=5.5}
-#| echo: false
-#| fig-cap: Figure 5. Shannon diversity index distribution stratified by response.
-mds_plot
-```
-
-```{r}
-#| echo: false
-adonis2(distance_matrics ~ dataset + response + cancer_type, data = meta_data, permutations = 99, by = "margin")
-```
-
+## Biomarkers discovery
