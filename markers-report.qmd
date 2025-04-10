@@ -1,62 +1,90 @@
 ---
-title: "cancer-markers"
 format: html
 editor: visual
 ---
 
 # Materials and methods
-## Metagenomic data
-
-## OGU table contruction
+## Data acquisition and preprocessing
 <p style="text-align: justify;">
-All 627 stool metagenomic samples were download from NCBI/EBI databases using kingfisher v0.4.1 (<https://github.com/wwood/kingfisher-download>). Quality assessment of data was performed using FastQC v0.12.1 (<https://www.bioinformatics.babraham.ac.uk/projects/fastqc>). Raw reads were processed using fastp v0.23.4 to remove low-quality sequences [Chen et al., 2018]. Human sequences present in the metagenomic samples were eliminated using hisat2 [Kim et al., 2019] and the human genome GRCh37 (Release 47) (<https://www.gencodegenes.org/human>). Metagenomic assembly was performed using MEGAHIT v1.2.9 [Li et al., 2015] with further filtering by length > 1000 bp. Hisat2 v2.2 was used for alignment to metagenomic reads to assembly filtered contigs [Kim et al. 2019]. Binning process were implemented as two stages 1) metagenomic binning using MetaBat2 v2.12.1 [Kang et al., 2019], MaxBin2 v2.2.7 [Wu et al., 2016], and Semibin2 v2.1.0 [Pan et al., 2023] tools; 2) DAS Tool v1.1.7 to enhance binning quality [Sieber et al, 2018]. Quality control of binning was performed using CheckM v1.2.3 [Parks et al., 2015]. Deprecation at 98% nucleotide identity of bins was performed using dRep v3.4.5 [Olm et al., 2017]. Taxonomic annotation of bins was performed using GTDBTk v2.1.1 [Chaumeil et al., 2022] with GTDB r207 [Parks et al, 2022]. Samtools v1.17 [Li et al., 2009], bedtools v2.31.0 [Quinlan et al., 2010] and bbmap v39.06 [Bushnell et al., 2014] were used for additional manipulation. InStrain v1.9.0 was used to obtain OGU abundance profiles [Olm et al, 2021].
+All 627 stool metagenomic samples from 11 published studies were downloaded from the NCBI/EBI databases using Kingfisher v0.4.1 [Woodcroft, 2022]. Data quality was assessed with FastQC v0.12.1 [Andrews et al., 2023], and raw reads were processed with fastp v0.23.4 to remove low-quality sequences [Chen et al., 2018]. Human-derived sequences were filtered out using HISAT2 v2.2 [Kim et al., 2019] with the GRCh37 human genome (Release 47) as a reference [Schneider et al, 2017].
+<p>
+
+## Assembly and binning
+<p style="text-align: justify;">
+Metagenomic assembly was performed using MEGAHIT v1.2.9 [Li et al., 2015], retaining contigs longer than 1000 bp. Filtered contigs were aligned to metagenomic reads using HISAT2 v2.2 [Kim et al., 2019]. Binning was conducted in two stages: (1) initial binning with MetaBAT2 v2.12.1 [Kang et al., 2019], MaxBin2 v2.2.7 [Wu et al., 2016], and Semibin2 v2.1.0 [Pan et al., 2023], followed by (2) refinement with DAS Tool v1.1.7 to improve bin quality [Sieber et al., 2018]. Bins were evaluated using CheckM v1.2.3 [Parks et al., 2015] and dereplicated at 98% nucleotide identity with dRep v3.4.5 [Olm et al., 2017].
+<p>
+
+OGU strategy description
+
+## Taxonomic profiling and analysis
+<p style="text-align: justify;">
+Taxonomic annotation of bins was performed using GTDB-Tk v2.1.1 [Chaumeil et al., 2022] with the GTDB r207 database [Parks et al., 2022]. Additional data processing utilized Samtools v1.17 [Li et al., 2009], BEDTools v2.31.0 [Quinlan et al., 2010], and BBMap v39.06 [Bushnell et al., 2014]. Finally, OGU abundance profiles were generated using InStrain v1.9.0 [Olm et al., 2021].
 <p>
 
 ## Marker OGU discovery
 <p style="text-align: justify;">
-The identification of OGUs associated with immunotherapy outcomes followed an established analytical framework from our previous work [Olekhnovich et al., 2023; Zakharevich et al., 2024]. Differential rankings analysis was first performed using Songbird [Morton et al., 2019] to identify MAGs showing significant abundance variations between response groups, applying a conservative absolute differential value threshold of > 0.3. For candidate MAGs meeting this criterion, we subsequently calculated log-ratio abundances using Qurro [Fedarko et al., 2020] and determined statistical significance through Wilcoxon rank-sum tests implemented in the R statistical environment. The biomarker selection process incorporated stringent cross-validation criteria to ensure robust identification of clinically relevant microbial signatures. MAGs demonstrating consistent positive associations with therapeutic response across multiple datasets were retained as potential beneficial biomarkers, while any evidence of negative association with treatment outcome in any dataset resulted in automatic exclusion regardless of other positive associations. This approach enabled simultaneous identification of two clinically meaningful biomarker categories: microbial taxa positively correlated with successful immunotherapy outcomes and those associated with adverse therapeutic responses. The methodology emphasizes reproducibility through multi-dataset validation and maintains rigorous standards for biomarker qualification by requiring consistent directional effects across independent cohorts.
+The identification of OGUs associated with immunotherapy outcomes followed an established analytical framework from our previous works [Olekhnovich et al., 2023; Zakharevich et al., 2024]. Differential rankings was first performed using Songbird [Morton et al., 2019] to identify OGUs showing relative abundance variations between experimental groups, applying a conservative absolute differential value threshold of > 0.3. For candidate OGUs meeting this criterion, we subsequently calculated log-ratio abundances using Qurro [Fedarko et al., 2020] and determined statistical significance through Wilcoxon rank-sum tests implemented in the R statistical environment. The biomarker selection process incorporated stringent cross-validation criteria to ensure robust identification of microbial signatures. OGUs demonstrating consistent positive associations with therapeutic response across multiple datasets were retained as potential beneficial biomarkers, while any evidence of negative association with treatment outcome in any dataset resulted in automatic exclusion regardless of other positive associations.This approach enabled simultaneous identification of two clinically meaningful biomarker categories: microbial taxa positively correlated with successful immunotherapy outcomes and those associated with adverse therapeutic responses. The methodology emphasizes reproducibility through multi-dataset validation and maintains rigorous standards for biomarker qualification by requiring consistent directional effects across independent cohorts.
 <p>
 
-lmer 
-multicomp
-
-logistic regression
-
-clusterProfilers
-
-ggseavis
-
+## Markers testing
+<p style="text-align: justify;">
+Determined R/NR biomarkers were used to calculate log ratios, followed by statistical assessment using the lmer function from the lmerTest package [Kuznetsova et al., 2017] in the R statistical environment. Post-hoc testing was performed using Tukey's method with the multcomp package [Bretz et al., 2011], applying Bonferroni correction for multiple comparisons. Model residuals were tested for normality using the Shapiro-Wilk test (shapiro.test function in R). Additional testing of marker OGU included investigating the ability of calculated log ratios to separate experimental groups using logistic regression using the method of leave-one group out cross validation. Gene-set enrichment analysis (GSEA) implemented in GSEA function from clusterProfiler package [Xu et al., 2024] using to investigate statistical relationships of OGU marker sets across taxonomy and other attributes included food, body site or pathogens. GSEA analysis results were visualized using gseavis package [Zhang et al., 2025].
+<p>
 
 ## Functional profiling of marker OGU
-MetaCerberus
+<p style="text-align: justify;">
+Functional profiles of OGUs were generated using MetaCerberus [Figueroa et al., 2024] with annotations from the Carbohydrate-Active EnZymes (CAZy) database [Drula et al., 2022] and the Kyoto Encyclopedia of Genes and Genomes (KEGG) [Kanehisa et al., 2025]. Statistical associations between functional features and experimental groups were assessed using logistic regression. Gene set enrichment analysis (GSEA) was applied to evaluate links between gene sets and immunotherapy response, with results visualized using the ggseavis package.
+<p>
 
-logistic resgression
-
-clusterProfilers
+## Additional analysis and visualization
+<p style="text-align: justify;">
+For visualization and statistical analysis, we utilized the following R packages: ggplot2 [Wickham et al., 2016] for graphics creation, ggpubr [Kassambara, 2023] for publication-ready plots, hrbrthemes [Rudis, 2020] for enhanced themes, and RColorBrewer [Neuwirth, 2022] for color palette management. String data manipulation was performed using the stringr package [Wickham, 2022]. The data analysis report was generated with Quarto [Allaire et al., 2022], incorporating dynamic tables via DT [Xie et al., 2023] and enhanced download functionality using downloadthis [Sidi, 2023].
+<p>
 
 ## Data availability
+<p style="text-align: justify;">
+In this study, we used open access data from the NCBI/EBI Sequence Read Archives, identified by the following BioProjects accession numbers: [PRJNA397906](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA397906), [PRJEB22893](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJEB22893), [PRJNA399742](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA399742), [PRJNA770295](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA770295), [PRJEB43119](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJEB43119), [PRJNA762360](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA762360), [PRJNA1011235](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA1011235), [PRJNA615114](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA615114), [PRJNA866654](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA866654), [PRJNA494824](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA494824), [PRJEB49516](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJEB49516). MAGs catalog assembly pipeline were description in <https://github.com/JeniaOle13/Cancer_MAGs>. All MAGs sequences were deposited in NCBI under accession [PRJNA1196825](https://www.ncbi.nlm.nih.gov/bioproject/1196825). Songbird Qurro files for QIIME2 viewer were available at [Zenodo](https://zenodo.org/records/15182082). Source code and Quarto report available at <https://github.com/JeniaOle13/cancer-biomarkers>.
+<p>
 
 ## References
-1) [Chen, Shifu, et al. "fastp: an ultra-fast all-in-one FASTQ preprocessor." Bioinformatics 34.17 (2018): i884-i890.](https://academic.oup.com/bioinformatics/article/34/17/i884/5093234)
-2) [Li, Dinghua, et al. "MEGAHIT: an ultra-fast single-node solution for large and complex metagenomics assembly via succinct de Bruijn graph." Bioinformatics 31.10 (2015): 1674-1676.](https://academic.oup.com/bioinformatics/article/31/10/1674/177884?login=true)
-3) [Kim, Daehwan, et al. "Graph-based genome alignment and genotyping with HISAT2 and HISAT-genotype." Nature biotechnology 37.8 (2019): 907-915.](https://www.nature.com/articles/s41587-019-0201-4)
-4) [Kang, Dongwan D., et al. "MetaBAT 2: an adaptive binning algorithm for robust and efficient genome reconstruction from metagenome assemblies." PeerJ 7 (2019): e7359.](https://peerj.com/articles/7359/)
-5) [Wu, Yu-Wei, Blake A. Simmons, and Steven W. Singer. "MaxBin 2.0: an automated binning algorithm to recover genomes from multiple metagenomic datasets." Bioinformatics 32.4 (2016): 605-607.](https://academic.oup.com/bioinformatics/article/32/4/605/1744462?login=true)
-6) [Pan, Shaojun, Xing-Ming Zhao, and Luis Pedro Coelho. "SemiBin2: self-supervised contrastive learning leads to better MAGs for short-and long-read sequencing." Bioinformatics 39.Supplement_1 (2023): i21-i29.](https://academic.oup.com/bioinformatics/article/39/Supplement_1/i21/7210480?login=true)
-7) [Sieber, Christian MK, et al. "Recovery of genomes from metagenomes via a dereplication, aggregation and scoring strategy." Nature microbiology 3.7 (2018): 836-843.](https://www.nature.com/articles/s41564-018-0171-1)
-8) [Parks, Donovan H., et al. "CheckM: assessing the quality of microbial genomes recovered from isolates, single cells, and metagenomes." Genome research 25.7 (2015): 1043-1055.](https://genome.cshlp.org/content/25/7/1043.short)
-9) [Olm, Matthew R., et al. "dRep: a tool for fast and accurate genomic comparisons that enables improved genome recovery from metagenomes through de-replication." The ISME journal 11.12 (2017): 2864-2868.](https://academic.oup.com/ismej/article/11/12/2864/7537826?login=true)
+1)  [Chen, Shifu, et al. "fastp: an ultra-fast all-in-one FASTQ preprocessor." Bioinformatics 34.17 (2018): i884-i890.](https://academic.oup.com/bioinformatics/article/34/17/i884/5093234)
+2)  [Li, Dinghua, et al. "MEGAHIT: an ultra-fast single-node solution for large and complex metagenomics assembly via succinct de Bruijn graph." Bioinformatics 31.10 (2015): 1674-1676.](https://academic.oup.com/bioinformatics/article/31/10/1674/177884?login=true)
+3)  [Kim, Daehwan, et al. "Graph-based genome alignment and genotyping with HISAT2 and HISAT-genotype." Nature biotechnology 37.8 (2019): 907-915.](https://www.nature.com/articles/s41587-019-0201-4)
+4)  [Kang, Dongwan D., et al. "MetaBAT 2: an adaptive binning algorithm for robust and efficient genome reconstruction from metagenome assemblies." PeerJ 7 (2019): e7359.](https://peerj.com/articles/7359/)
+5)  [Wu, Yu-Wei, Blake A. Simmons, and Steven W. Singer. "MaxBin 2.0: an automated binning algorithm to recover genomes from multiple metagenomic datasets." Bioinformatics 32.4 (2016): 605-607.](https://academic.oup.com/bioinformatics/article/32/4/605/1744462?login=true)
+6)  [Pan, Shaojun, Xing-Ming Zhao, and Luis Pedro Coelho. "SemiBin2: self-supervised contrastive learning leads to better MAGs for short-and long-read sequencing." Bioinformatics 39.Supplement_1 (2023): i21-i29.](https://academic.oup.com/bioinformatics/article/39/Supplement_1/i21/7210480?login=true)
+7)  [Sieber, Christian MK, et al. "Recovery of genomes from metagenomes via a dereplication, aggregation and scoring strategy." Nature microbiology 3.7 (2018): 836-843.](https://www.nature.com/articles/s41564-018-0171-1)
+8)  [Parks, Donovan H., et al. "CheckM: assessing the quality of microbial genomes recovered from isolates, single cells, and metagenomes." Genome research 25.7 (2015): 1043-1055.](https://genome.cshlp.org/content/25/7/1043.short)
+9)  [Olm, Matthew R., et al. "dRep: a tool for fast and accurate genomic comparisons that enables improved genome recovery from metagenomes through de-replication." The ISME journal 11.12 (2017): 2864-2868.](https://academic.oup.com/ismej/article/11/12/2864/7537826?login=true)
 10) [Chaumeil, Pierre-Alain, et al. "GTDB-Tk v2: memory friendly classification with the genome taxonomy database." Bioinformatics 38.23 (2022): 5315-5316.](https://academic.oup.com/bioinformatics/article/38/23/5315/6758240?login=true)
 11) [Parks, Donovan H., et al. "GTDB: an ongoing census of bacterial and archaeal diversity through a phylogenetically consistent, rank normalized and complete genome-based taxonomy." Nucleic acids research 50.D1 (2022): D785-D794.](https://academic.oup.com/nar/article/50/D1/D785/6370255?login=true)
 12) [Li, Heng, et al. "The sequence alignment/map format and SAMtools." bioinformatics 25.16 (2009): 2078-2079.](https://academic.oup.com/bioinformatics/article/25/16/2078/204688?login=true)
 13) [Quinlan, Aaron R., and Ira M. Hall. "BEDTools: a flexible suite of utilities for comparing genomic features." Bioinformatics 26.6 (2010): 841-842.](https://academic.oup.com/bioinformatics/article/26/6/841/244688?login=true)
 14) [Bushnell, Brian. "BBMap: a fast, accurate, splice-aware aligner." (2014).](https://escholarship.org/uc/item/1h3515gn)
 15) [Olm, Matthew R., et al. "inStrain profiles population microdiversity from metagenomic data and sensitively detects shared microbial strains." Nature Biotechnology 39.6 (2021): 727-736.](https://www.nature.com/articles/s41587-020-00797-0)
-16) [Olekhnovich, Evgenii I., et al. "Consistent stool metagenomic biomarkers associated with the response to melanoma immunotherapy." Msystems 8.2 (2023): e01023-22.](https://journals.asm.org/doi/full/10.1128/msystems.01023-22)
+16) [Olekhnovich, Evgenii I., et al. "Consistent stool metagenomic biomarkers associated with the response to melanoma immunotherapy." mSystems 8.2 (2023): e01023-22.](https://journals.asm.org/doi/full/10.1128/msystems.01023-22)
 17) [Zakharevich, Natalia V., et al. "Systemic metabolic depletion of gut microbiome undermines responsiveness to melanoma immunotherapy." Life Science Alliance 7.5 (2024).](https://www.life-science-alliance.org/content/7/5/e202302480.abstract)
 18) [Morton, James T., et al. "Establishing microbial composition measurement standards with reference frames." Nature communications 10.1 (2019): 2719.](https://www.nature.com/articles/s41467-019-10656-5)
 19) [Fedarko, Marcus W., et al. "Visualizing’omic feature rankings and log-ratios using Qurro." NAR genomics and bioinformatics 2.2 (2020): lqaa023.](https://academic.oup.com/nargab/article/2/2/lqaa023/5826153?login=true)
 20) [Bolyen, Evan, et al. "Reproducible, interactive, scalable and extensible microbiome data science using QIIME 2." Nature biotechnology 37.8 (2019): 852-857.](https://www.nature.com/articles/s41587-019-0209-9)
+21) [Kuznetsova, Alexandra, Per B. Brockhoff, and Rune HB Christensen. "lmerTest package: tests in linear mixed effects models." Journal of statistical software 82 (2017): 1-26.](https://www.jstatsoft.org/article/view/v082i13/0)
+22) [Bretz, F., Hothorn, T., & Westfall, P. (2011). Multiple comparisons using R. CRC Press.](https://doi.org/10.1201/9781420010909)
+23) [Xu S, Hu E, Cai Y, Xie Z, Luo X, Zhan L, Tang W, Wang Q, Liu B, Wang R, Xie W, Wu T, Xie L, Yu G (2024). “Using clusterProfiler to characterize multiomics data.” Nature Protocols, 19(11), 3292-3320. doi:10.1038/s41596-024-01020-z](https://www.nature.com/articles/s41596-024-01020-z)
+24) [Zhang, Jun, et al. "GseaVis: An R Package for Enhanced Visualization of Gene Set Enrichment Analysis in Biomedicine." Med Research (2025).](https://onlinelibrary.wiley.com/doi/full/10.1002/mdr2.70000)
+25) [Figueroa III, Jose L., et al. "MetaCerberus: distributed highly parallelized HMM-based processing for robust functional annotation across the tree of life." Bioinformatics 40.3 (2024): btae119.](https://academic.oup.com/bioinformatics/article/40/3/btae119/7616988)
+26) [Drula, Elodie, et al. "The carbohydrate-active enzyme database: functions and literature." Nucleic acids research 50.D1 (2022): D571-D577.](https://academic.oup.com/nar/article/50/D1/D571/6445960?searchresult=1)
+27) [Kanehisa, Minoru, et al. "KEGG: biological systems database as a model of the real world." Nucleic Acids Research 53.D1 (2025): D672-D677.](https://academic.oup.com/nar/article/53/D1/D672/7824602?searchresult=1)
+28) [Wickham, H. (2016). ggplot2: Elegant graphics for data analysis (2nd ed.). Springer-Verlag.](https://doi.org/10.1007/978-3-319-24277-4)
+29) [Kassambara A (2023). ggpubr: 'ggplot2' Based Publication Ready Plots. R package version 0.6.0.](https://rpkgs.datanovia.com/ggpubr/)
+30) [Rudis, Bob. hrbrthemes: Additional Themes, Theme Components and Utilities for 'ggplot2'. R package version 0.8.0, 2020.](https://github.com/hrbrmstr/hrbrthemes)
+31) [Neuwirth, Erich. RColorBrewer: ColorBrewer Palettes. R package version 1.1-3, 2022.](https://CRAN.R-project.org/package=RColorBrewer)
+32) [Wickham, Hadley. stringr: Simple, Consistent Wrappers for Common String Operations. R package version 1.5.0, 2022.](https://CRAN.R-project.org/package=stringr)
+33) [Allaire, J. J., et al. Quarto. Version 1.3, 2022.](https://quarto.org/.)
+34) [Xie, Yihui, Joe Cheng, and Xianying Tan. DT: A Wrapper of the JavaScript Library 'DataTables'. R package version 0.28, 2023](https://CRAN.R-project.org/package=DT)
+35) [Sidi, Fahim. downloadthis: Implement Download Buttons in 'R Markdown'. R package version 1.0.0, 2023](https://CRAN.R-project.org/package=downloadthis)
+36) [Woodcroft, Ben J. Kingfisher: Rapid SRA Download Tool. Version 0.4.1, 2022](https://github.com/wwood/kingfisher-download)
+37) [Andrews S. FastQC: A quality control tool for high throughput sequence data. Version 0.12.1, 2023.](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
+38) [Schneider VA, et al. Evaluation of GRCh38 and de novo haploid genome assemblies demonstrates the enduring quality of the reference assembly. Genome Research 2017;27(5):849-864.](doi:10.1101/gr.213611.116)
 
 ```{r}
 #| include: false
@@ -232,7 +260,9 @@ food$genome <- sub(".fa", "", food$genome)
 ```
 
 # Results
+
 ## Data overview
+
 <p style="text-align: justify;">
 The analysis incorporated 627 gut metagenomic profiling samples obtained from 11 independent external datasets. Patients were stratified by immunotherapy response into two groups: responders (R group, n = 365; 58.2%) and non-responders (NR group, n = 262; 41.8%). Response assessment followed RECIST 1.1 criteria, with the R group including patients showing complete response (CR), partial response (PR), or stable disease (SD) at 6-month follow-up, while the NR group comprised exclusively progressive disease (PD) cases. The study cohort received various immunotherapy regimens, including anti-PD1, anti-CTLA4, or combination therapies. Cancer type distribution revealed melanoma predominance (n = 456; 72.7%), followed by gastrointestinal cancers (n = 82; 13.1%), non-small cell lung cancer (n = 15; 2.4%), breast cancer (n = 4; 0.6%), ovarian cancer (n = 2; 0.3%), and other malignancies (n = 68; 10.8%). All samples were collected prior to treatment initiation to evaluate baseline microbiota status.
 <p>
@@ -250,6 +280,7 @@ datatable(meta_data,
 ```
 
 ## Quality control
+
 ```{r}
 #| echo: false
 #| message: false
@@ -263,6 +294,7 @@ datatable(statistic,
 ```
 
 ## Taxonomic composition
+
 ```{r}
 #| echo: false
 #| message: false
