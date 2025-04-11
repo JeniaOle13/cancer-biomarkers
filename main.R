@@ -3,7 +3,7 @@ setwd("/home/acari/Documents/github/cancer-biomarkers/")
 library(ggplot2)
 library(ggpubr)
 library(phyloseq)
-library(microViz)
+library(MicrobiotaProcess)
 library(vegan)
 library(stringr)
 library(Maaslin2)
@@ -11,8 +11,10 @@ library(RColorBrewer)
 library(lmerTest)
 library(multcomp)
 library(clusterProfiler)
-library(enrichplot)
-library(fgsea)
+
+library(pROC)
+library(caret)
+library(tidyverse)
 
 # import data
 otu_table <- read.csv("data/mags_relab.tsv", sep = "\t", row.names = 1)
@@ -64,21 +66,9 @@ food$site <- "food"
 food$genome <- sub(".fa", "", food$genome)
 
 # Genus plot
-phyobj <- phyloseq(otu_table(otu_table, taxa_are_rows=FALSE),
-                        sample_data(meta_data),
-                        tax_table(as.matrix(tax_table)))
-
-phyobj_100 <- transform_sample_counts(phyobj, function(x) 100 * x/sum(x))
-
-phylum_barplot <- phyobj_100 %>% comp_barplot("phylum", merge_other = FALSE, label = NULL)+
-    facet_wrap(vars(response), scales = "free", nrow = 2)+
-    theme_minimal()+
-    theme(legend.position = "bottom")
-
-genus_barplot <- phyobj_100 %>% comp_barplot("genus", merge_other = FALSE, label = NULL, n_taxa = 10)+
-    facet_wrap(~response, scales = "free", nrow = 2)+
-    theme_minimal()+
-    theme(legend.position = "bottom")
+meta_data_d <- meta_data
+rownames(meta_data_d) <- meta_data_d$sampleid
+meta_data_d <- meta_data_d[-1]
 
 # Alpha diversity
 shannon <- diversity(otu_table, index = "shannon")
@@ -178,10 +168,11 @@ coef_barplot <- ggplot(songbird_coef, aes(x = reorder(featureid, mean), y=mean))
         panel.border = element_rect(fill = NA))+
     ylab("Mean R/NR + k")
 
+BiocManager::install("biomformat")
 
 df.log_ratio <- NULL
-for (i in rownames(otu_table)){
-    df <- otu_table[rownames(otu_table) %in% i,]
+for (i in rownames(ogu_table)){
+    df <- otu_table[rownames(ogu_table) %in% i,]
     df <- df[colSums(df) > 0]
     
     df_denominator <- df[colnames(df) %in% songbird_coef$featureid[songbird_coef$mean < 0]]
@@ -197,8 +188,6 @@ for (i in rownames(otu_table)){
 }
 
 df.log_ratio <- merge(df.log_ratio, cbind(rownames(meta_data), meta_data), by = 1)
-df.log_ratio_sbs <- df.log_ratio[df.log_ratio$log_ratio != Inf,]
-df.log_ratio_sbs <- df.log_ratio_sbs[df.log_ratio_sbs$log_ratio != -Inf,]
 
 logratio_boxplot <- ggplot(df.log_ratio_sbs)+
     geom_boxplot(mapping = aes(log_ratio, response), outlier.color = "white")+
@@ -216,87 +205,103 @@ summary(glht(lmer.shannon, linfct = mcp(response = "Tukey")), test = adjusted("b
 shapiro.test(residuals(lmer.shannon))
 
 # Function to perform LOGO-CV
-df.log_ratio_sbs <- df.log_ratio_sbs |> mutate(response = factor(response, levels = c("NR", "R")))
+df.log_ratio <- df.log_ratio |>  mutate(response = as.factor(ifelse(response == "R", 1, 0)))
 
-logo_cv <- function(data, group_var, formula) {
-    groups <- unique(data[[group_var]])
-    predictions <- data.frame(
-      obs = data$response,
-      pred = NA,
-      NR = NA,
-      R = NA,
-      group = data[[group_var]]
+unique_datasets <- unique(df.log_ratio$dataset)
+roc_list <- list()
+conf_matrix_list <- list()
+
+for (i in seq_along(unique_datasets)) {
+    test_dataset <- unique_datasets[i]
+    train_data <- df.log_ratio %>% filter(dataset != test_dataset)
+    test_data <- df.log_ratio %>% filter(dataset == test_dataset)
+    
+    # Train logistic regression model
+    model <- glm(response ~ log_ratio, family = binomial, data = train_data)
+    
+    # Predict on test data
+    test_data$pred_prob <- predict(model, test_data, type = "response")
+    roc_obj <- roc(test_data$response, test_data$pred_prob)
+    roc_list[[i]] <- roc_obj
+    
+    # Confusion matrix (using 0.5 as threshold)
+    test_data$pred_class <- ifelse(test_data$pred_prob >= 0.5, 1, 0)
+    conf_matrix <- confusionMatrix(
+        as.factor(test_data$pred_class), 
+        test_data$response,
+        positive = "1"
     )
-    
-    auc_values <- numeric(length(groups))
-    
-    for (i in seq_along(groups)) {
-      # Split data
-      test_index <- which(data[[group_var]] == groups[i])
-      train_data <- data[-test_index, ]
-      test_data <- data[test_index, ]
-      
-      # Train model
-      model <- glm(formula, data = train_data, family = binomial)
-      
-      # Predict
-      pred_probs <- predict(model, newdata = test_data, type = "response")
-      predictions[test_index, "NR"] <- 1 - pred_probs
-      predictions[test_index, "R"] <- pred_probs
-      predictions[test_index, "pred"] <- ifelse(pred_probs > 0.5, "R", "NR")
-      
-      # Calculate AUC if both classes are present
-      if (length(unique(test_data$response)) == 2) {
-        roc_obj <- roc(test_data$response, pred_probs)
-        auc_values[i] <- auc(roc_obj)
-      } else {
-        auc_values[i] <- NA
-      }
-    }
-    
-    return(list(predictions = predictions, auc_values = auc_values))
+    conf_matrix_list[[i]] <- conf_matrix
 }
 
-result_dataset <- logo_cv(df.log_ratio_sbs, "dataset", response ~ log_ratio)
+conf_metrics <- map_dfr(conf_matrix_list, ~{
+    data.frame(
+        Accuracy = .x$overall["Accuracy"],
+        Sensitivity = .x$byClass["Sensitivity"],
+        Specificity = .x$byClass["Specificity"]
+    )
+}, .id = "Dataset") %>% 
+    mutate(Dataset = unique_datasets[as.numeric(Dataset)])
 
-conf_matrix_dataset <- confusionMatrix(
-    factor(result_dataset$predictions$pred, levels = c("NR", "R")), 
-    result_dataset$predictions$obs
-)
-
-roc_dataset <- roc(result_dataset$predictions$obs, result_dataset$predictions$R)
-
-roc_plot_dataset <- ggroc(roc_dataset) +
-    geom_abline(slope = 1, intercept = 1, linetype = "dashed") +
-    labs(title = "ROC Curve - LOGO-CV by Dataset",
-    subtitle = paste0("AUC = ", round(auc(roc_dataset), 3), 
-    " (95% CI: ", round(ci.auc(roc_dataset)[1], 3), 
-    "-", round(ci.auc(roc_dataset)[3], 3), ")")) +
-    theme_bw()+
-    theme(panel.grid.major.y = element_blank())
+mean(conf_metrics$Accuracy)
+mean(conf_metrics$Sensitivity)
+mean(conf_metrics$Specificity)
 
 # GSEA
-## Taxonomic
-vec <- songbird_coef$mean
-names(vec) <- songbird_coef$featureid
+vec <- ogu.markers$mean
+names(vec) <- ogu.markers$featureid
 vec <- sort(vec, decreasing = T)
 
-gs_taxonomy <- cbind(featureid = rownames(tax_table), tax_table)
-gs_taxonomy$phylum <- sapply(str_split(gs_taxonomy$phylum, "_"), function(x) x[1])
-gs_taxonomy$genus <- sapply(str_split(gs_taxonomy$genus, "_"), function(x) x[1])
+## By taxonomy
+fgsea_phylum <- GSEA(vec, TERM2GENE = ogu.markers[c(8,1)], eps = 0)
+fgsea_phylum_df <- as.data.frame(fgsea_phylum)
 
-mag.biomarkers$species <- sub("_A|_D|_B|_E|_Q|_J|_H|_C|_F|_G|_K|_M", "", mag.biomarkers$species)
+fgsea_class <- GSEA(vec, TERM2GENE = ogu.markers[c(9,1)], eps = 0)
+fgsea_class_df <- as.data.frame(fgsea_class)
 
-gsea_phylum <- GSEA(vec, TERM2GENE = gs_taxonomy[c(3,1)])
-gsea_phylum_df  <- as.data.frame(gsea_phylum)
+fgsea_order <- GSEA(vec, TERM2GENE = ogu.markers[c(10,1)], eps = 0)
+fgsea_order_df <- as.data.frame(fgsea_order)
 
-mag.biomarkers[mag.biomarkers$featureid %in% unlist(str_split(gsea_phylum_df$core_enrichment[[1]], "\\/")),]
-mag.biomarkers[mag.biomarkers$featureid %in% unlist(str_split(gsea_phylum_df$core_enrichment[[2]], "\\/")),]
+fgsea_family <- GSEA(vec, TERM2GENE = ogu.markers[c(11,1)], eps = 0)
+fgsea_family_df <- as.data.frame(fgsea_family)
 
-gsea_species <- GSEA(vec, TERM2GENE = mag.biomarkers[c(8,2)], eps = 0)
-gsea_species_df  <- as.data.frame(gsea_species)
+fgsea_genus <- GSEA(vec, TERM2GENE = ogu.markers[c(12,1)], eps = 0)
+fgsea_genus_df <- as.data.frame(fgsea_genus)
 
-gsea_genus <- GSEA(vec, TERM2GENE = gs_taxonomy[c(7,1)], eps = 0)
-gsea_genus_df  <- as.data.frame(gsea_genus)
+gs_species <- ogu.markers[c(13,1)]
+gs_species$species <- sub(" ", "_", gs_species$species)
 
-## Body site-borne and food-borne
+fgsea_species <- GSEA(vec, TERM2GENE = ogu.markers[c(13,1)], eps = 0)
+fgsea_species_df <- as.data.frame(fgsea_species)
+
+gseaNb(object = fgsea_phylum,
+       geneSetID = fgsea_phylum_df$ID, 
+       curveCol = brewer.pal(name = "Set1", n = 9))
+
+gseaNb(object = fgsea_class,
+       geneSetID = fgsea_class_df$ID, 
+       curveCol = brewer.pal(name = "Set1", n = 9))
+
+gseaNb(object = fgsea_order,
+       geneSetID = fgsea_order_df$ID, 
+       curveCol = brewer.pal(name = "Set1", n = 9)[-6])
+
+gseaNb(object = fgsea_family,
+       geneSetID = fgsea_family_df$ID, 
+       curveCol = brewer.pal(name = "Set1", n = 9)[-6])
+
+gseaNb(object = fgsea_genus,
+       geneSetID = fgsea_genus_df$ID, 
+       curveCol = c(brewer.pal(name = "Set1", n = 9)[-6], "cyan4"))
+
+## By site
+fgsea_food <- GSEA(vec, TERM2GENE = food[c(2,1)])
+fgsea_bodysite <- GSEA(vec, TERM2GENE = body_site[c(2,1)])
+
+gseaNb(object = fgsea_food, 
+       geneSetID = 'food', 
+       htCol = c("#A50F15", "#08519C"))
+
+gseaNb(object = fgsea_bodysite,
+       geneSetID = 'Oral cavity', 
+       htCol = c("#A50F15", "#08519C"))
