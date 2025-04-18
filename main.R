@@ -14,7 +14,9 @@ library(clusterProfiler)
 
 library(pROC)
 library(caret)
+library(ROSE)
 library(tidyverse)
+library(effectsize)
 
 # import data
 otu_table <- read.csv("data/mags_relab.tsv", sep = "\t", row.names = 1)
@@ -178,6 +180,9 @@ for (i in rownames(ogu_table)){
     df_denominator <- df[colnames(df) %in% songbird_coef$featureid[songbird_coef$mean < 0]]
     df_numerator <- df[colnames(df) %in% songbird_coef$featureid[songbird_coef$mean > 0]]
     
+    df_denominator <- df_denominator[df_denominator > 0]
+    df_numerator <- df_numerator[df_numerator > 0]
+    
     df_denominator <- df_denominator + 0.001
     df_numerator <- df_numerator + 0.001
 
@@ -189,40 +194,48 @@ for (i in rownames(ogu_table)){
 
 df.log_ratio <- merge(df.log_ratio, cbind(rownames(meta_data), meta_data), by = 1)
 
-logratio_boxplot <- ggplot(df.log_ratio_sbs)+
-    geom_boxplot(mapping = aes(log_ratio, response), outlier.color = "white")+
-    geom_jitter(mapping = aes(log_ratio, response, col = response), 
-                width = 0.25, alpha = 0.75, stroke = 1.25, shape = 1, size = 1)+
-    coord_flip()+
-    xlab("Response")+
-    ylab("Log ratio")+
-    theme_bw()+
-    theme(legend.position = "none")+
-    scale_color_brewer(palette = "Set1")
-
-lmer.shannon <- lmer(log_ratio ~ response + (1|dataset), data=df.log_ratio_sbs)
+lmer.shannon <- lmer(log_ratio ~ response + (1|dataset), data=df.log_ratio)
 summary(glht(lmer.shannon, linfct = mcp(response = "Tukey")), test = adjusted("bonferroni"))
 shapiro.test(residuals(lmer.shannon))
+cohens_d(rank ~ response, data=df.log_ratio)
 
 # Function to perform LOGO-CV
 df.log_ratio <- df.log_ratio |>  mutate(response = as.factor(ifelse(response == "R", 1, 0)))
+df.log_ratio$dataset <- as.factor(df.log_ratio$dataset)
+df.log_ratio$cancer_type <- as.factor(df.log_ratio$cancer_type)
+
+df.log_ratio_centered <- df.log_ratio %>%
+    group_by(dataset) %>%
+    mutate(log_ratio_centered = log_ratio - median(log_ratio, na.rm = TRUE))) %>%
+    ungroup()
+df.log_ratio_centered <- as.data.frame(df.log_ratio_centered)
 
 unique_datasets <- unique(df.log_ratio$dataset)
 roc_list <- list()
 conf_matrix_list <- list()
 
+class_counts <- table(df.log_ratio$response)
+
+df.log_ratio$weights <- ifelse(df.log_ratio$response == "1", 
+                  1/class_counts["1"], 
+                  1/class_counts["0"])
+
+df.log_ratio_centered$rank <- rank(df.log_ratio_centered$log_ratio_centered)
+
 for (i in seq_along(unique_datasets)) {
     test_dataset <- unique_datasets[i]
-    train_data <- df.log_ratio %>% filter(dataset != test_dataset)
-    test_data <- df.log_ratio %>% filter(dataset == test_dataset)
+    
+    train_data <- df.log_ratio_centered %>% filter(dataset != test_dataset)
+    test_data <- df.log_ratio_centered %>% filter(dataset == test_dataset)
     
     # Train logistic regression model
-    model <- glm(response ~ log_ratio, family = binomial, data = train_data)
+    model <- glm(response ~ log_ratio_centered, family = binomial, data = train_data, weights = weights)
+    # model <- glm(response ~ log_ratio, family = binomial, data = train_data)
     
     # Predict on test data
     test_data$pred_prob <- predict(model, test_data, type = "response")
     roc_obj <- roc(test_data$response, test_data$pred_prob)
-    roc_list[[i]] <- roc_obj
+    roc_list[[i]] <- roc_obj$specificities
     
     # Confusion matrix (using 0.5 as threshold)
     test_data$pred_class <- ifelse(test_data$pred_prob >= 0.5, 1, 0)
@@ -234,18 +247,33 @@ for (i in seq_along(unique_datasets)) {
     conf_matrix_list[[i]] <- conf_matrix
 }
 
+roc_combined <- roc_list[[1]]
+for (i in 2:length(roc_list)) {
+    roc_combined <- roc_combined + roc_list[[i]]
+}
+roc_mean <- roc_combined / length(roc_list)
+
 conf_metrics <- map_dfr(conf_matrix_list, ~{
     data.frame(
         Accuracy = .x$overall["Accuracy"],
         Sensitivity = .x$byClass["Sensitivity"],
         Specificity = .x$byClass["Specificity"]
     )
-}, .id = "Dataset") %>% 
+}, .id = "Dataset") %>%
     mutate(Dataset = unique_datasets[as.numeric(Dataset)])
 
 mean(conf_metrics$Accuracy)
 mean(conf_metrics$Sensitivity)
 mean(conf_metrics$Specificity)
+
+logratio_boxplot <- ggplot(df.log_ratio, aes(response, log_ratio, col = response))+
+    stat_halfeye()+
+    facet_wrap(~dataset)+
+    xlab("Response")+
+    ylab("Log ratio")+
+    theme_pubr()+
+    theme(legend.position = "none")+
+    scale_color_brewer(palette = "Set1")
 
 # GSEA
 vec <- ogu.markers$mean
@@ -305,3 +333,4 @@ gseaNb(object = fgsea_food,
 gseaNb(object = fgsea_bodysite,
        geneSetID = 'Oral cavity', 
        htCol = c("#A50F15", "#08519C"))
+
