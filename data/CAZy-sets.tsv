@@ -1,0 +1,303 @@
+L1	ID	Function
+Auxiliary activities	AA10	copper-dependent lytic polysaccharide monooxygenases 
+Auxiliary activities	AA1	laccase / p-diphenol:oxygen oxidoreductase / ferroxidase
+Auxiliary activities	AA3	cellobiose dehydrogenase
+Auxiliary activities	AA4	vanillyl-alcohol oxidase
+Auxiliary activities	AA5	oxidase with oxygen as acceptor
+Auxiliary activities	AA6	1,4-benzoquinone reductase
+Auxiliary activities	AA7	glucooligosaccharide oxidase
+Carb binding modules	CBM13	mannose/xylan binding
+Carb binding modules	CBM16	cellulose/glucomannan binding
+Carb binding modules	CBM20	starch binding
+Carb binding modules	CBM21	starch binding
+Carb binding modules	CBM22	xylan binding
+Carb binding modules	CBM23	mannan binding 
+Carb binding modules	CBM25	starch binding
+Carb binding modules	CBM26	starch binding
+Carb binding modules	CBM27	mannan binding 
+Carb binding modules	CBM2	cellulose/chitin/xylan binding
+Carb binding modules	CBM30	cellulose binding
+Carb binding modules	CBM32	galactose/lactose/polygalacturonic acid/LacNAc binding
+Carb binding modules	CBM34	starch binding
+Carb binding modules	CBM35	xylan/beta-galactan/mannan binding
+Carb binding modules	CBM36	xylan/xylooligosaccharide binding
+Carb binding modules	CBM38	inulin binding
+Carb binding modules	CBM3	cellulose/chitin binding
+Carb binding modules	CBM40	sialic acid binding
+Carb binding modules	CBM41	alpha-glucans/amylose/amylopectin/pullulan/oligosaccharide binding
+Carb binding modules	CBM42	arabinofuranose binding
+Carb binding modules	CBM46	cellulose binding
+Carb binding modules	CBM47	fucose binding
+Carb binding modules	CBM48	glycogene binding
+Carb binding modules	CBM4	xylan/beta-1,3/1,3-1,4/1,6-glucan/amorphous cellulose binding
+Carb binding modules	CBM50	chitopentaose binding
+Carb binding modules	CBM51	galactose binding
+Carb binding modules	CBM54	xylan/yeast cell wall glucan/chitin binding
+Carb binding modules	CBM56	beta-1,3-glucan binding
+Carb binding modules	CBM57	glc(2)-N-glycan binding
+Carb binding modules	CBM61	beta-1,4-galactan binding
+Carb binding modules	CBM62	galactose binding on xyloglucan/arabinogalactan/galactomannan.
+Carb binding modules	CBM63	cellulose binding
+Carb binding modules	CBM65	board range beta-glucans/xyloglucan
+Carb binding modules	CBM66	fructans/fructoside binding
+Carb binding modules	CBM67	L-rhamnose binding
+Carb binding modules	CBM68	maltotriose/maltotetraose binding
+Carb binding modules	CBM69	starch binding
+Carb binding modules	CBM6	board range binding (cellulose/beta-1,3/1,3-1,4/1,4-glucan/beta-1,4-xylan)
+Carb binding modules	CBM71	lactose/LacNAc binding
+Carb binding modules	CBM73	chitin binding
+Carb binding modules	CBM74	starch binding
+Carb binding modules	CBM75	xyloglucan binding
+Carb binding modules	CBM76	board range beta-glycan binding (xyloglucan/glucomannan/galactomannan)
+Carb binding modules	CBM77	pectin binding
+Carb binding modules	CBM78	beta-1,4-glucans/xyloglucan binding
+Carb binding modules	CBM79	beta-glucan binding
+Carb binding modules	CBM80	board range beta-glycan binding (xyloglucan/glucomannan/galactomannan)
+Carb binding modules	CBM82	starch binding
+Carb binding modules	CBM83	starch binding
+Carb binding modules	CBM84	xanthan binding
+Carb binding modules	CBM85	broad range binding (cellulose/glucuronoxylan/beta-1,3-1,4-glucan/glucomannan)
+Carb binding modules	CBM86	xylan binding
+Carb binding modules	CBM88	terminal galactose binding in galactoxyloglucan/galactomannan
+Carb binding modules	CBM89	xylan/arabinoxylan binding
+Carb binding modules	CBM91	xylan binding
+Carb binding modules	CBM9	cellulose binding
+Carb esterases	CE11	UDP-3-0-acyl N-acetylglucosamine deacetylase
+Carb esterases	CE12	pectin acetylesterase
+Carb esterases	CE13	pectin acetylesterase
+Carb esterases	CE14	N-acetyl-1-D-myo-inosityl-2-amino-2-deoxy-alpha-D-glucopyranoside deacetylase
+Carb esterases	CE15	4-O-methyl-glucuronoyl methylesterase
+Carb esterases	CE16	acetylesterase
+Carb esterases	CE17	acetylmannan esterase 
+Carb esterases	CE19	pectin methylesterase
+Carb esterases	CE1	acetyl xylan esterase
+Carb esterases	CE20	acetylestarerase
+Carb esterases	CE2	acetyl xylan esterase
+Carb esterases	CE3	acetyl xylan esterase
+Carb esterases	CE4	acetyl xylan esterase
+Carb esterases	CE5	acetyl xylan esterase
+Carb esterases	CE6	acetyl xylan esterase
+Carb esterases	CE7	acetyl xylan esterase
+Carb esterases	CE8	pectin methylesterase
+Carb esterases	CE9	N-acetylglucosamine 6-phosphate deacetylase
+Glycoside hydrolase	GH101	endo-alpha-N-acetylgalactosaminidase
+Glycoside hydrolase	GH102	peptidoglycan lytic transglycosylase
+Glycoside hydrolase	GH103	peptidoglycan lytic transglycosylase
+Glycoside hydrolase	GH104	peptidoglycan lytic transglycosylase
+Glycoside hydrolase	GH105	unsaturated rhamnogalacturonyl hydrolase
+Glycoside hydrolase	GH106	alpha-L-rhamnosidase
+Glycoside hydrolase	GH108	N-acetylmuramidase
+Glycoside hydrolase	GH109	alpha-N-acetylgalactosaminidase
+Glycoside hydrolase	GH10	endo-1,4-beta-xylanase
+Glycoside hydrolase	GH110	alpha-galactosidase
+Glycoside hydrolase	GH111	keratan sulfate hydrolase (endo-beta-N-acetylglucosaminidase)
+Glycoside hydrolase	GH112	lacto-N-biose phosphorylase or galacto-N-biose phosphorylase
+Glycoside hydrolase	GH113	beta-mannanase
+Glycoside hydrolase	GH115	xylan alpha-1,2-glucuronidase
+Glycoside hydrolase	GH116	beta-glucosidase
+Glycoside hydrolase	GH117	beta-D-galactofuranosidase
+Glycoside hydrolase	GH119	alpha-amylase
+Glycoside hydrolase	GH11	endo-beta-1,4-xylanase
+Glycoside hydrolase	GH120	beta-xylosidase
+Glycoside hydrolase	GH121	beta-L-arabinobiosidase
+Glycoside hydrolase	GH123	beta-N-acetylgalactosaminidase
+Glycoside hydrolase	GH125	exo-alpha-1,6-mannosidase
+Glycoside hydrolase	GH126	alpha-amylase
+Glycoside hydrolase	GH127	beta-L-arabinofuranosidase
+Glycoside hydrolase	GH128	beta-1,3-glucanase
+Glycoside hydrolase	GH129	alpha-N-acetylgalactosaminidase
+Glycoside hydrolase	GH130	beta-1,4-mannosylglucose phosphorylase
+Glycoside hydrolase	GH133	amylo-alpha-1,6-glucosidase
+Glycoside hydrolase	GH136	lacto-N-biosidase
+Glycoside hydrolase	GH137	beta-L-arabinofuranosidase
+Glycoside hydrolase	GH138	rhamnogalacturonan alpha-1,2-galacturonohydrolase
+Glycoside hydrolase	GH139	alpha-2-O-Me-L-fucosidase
+Glycoside hydrolase	GH13	alpha-amylase
+Glycoside hydrolase	GH140	beta-1,2-apiosidase
+Glycoside hydrolase	GH141	alpha-L-fucosidase
+Glycoside hydrolase	GH142	beta-L-arabinofuranosidase
+Glycoside hydrolase	GH143	2-keto-3-deoxy-D-lyxo-heptulosaric acid hydrolase
+Glycoside hydrolase	GH144	endo-beta-1,2-glucanase
+Glycoside hydrolase	GH146	beta-L-arabinofuranosidase
+Glycoside hydrolase	GH147	beta-galactosidase
+Glycoside hydrolase	GH148	beta-1,3-glucanase
+Glycoside hydrolase	GH149	beta-1,3-glucan phosphorylase
+Glycoside hydrolase	GH151	alpha-L-fucosidase
+Glycoside hydrolase	GH153	poly-beta-1,6-D-glucosamine hydrolase
+Glycoside hydrolase	GH154	Beta-glucuronidase; beta-1,6-D-glucuronidase
+Glycoside hydrolase	GH156	exo-alpha-sialidase
+Glycoside hydrolase	GH158	endo-beta-1,3-glucanase
+Glycoside hydrolase	GH159	beta-D-galactofuranosidase
+Glycoside hydrolase	GH15	glucoamylase
+Glycoside hydrolase	GH161	beta-1,3-glucan phosphorylase
+Glycoside hydrolase	GH163	endo-beta-N-acetylglucosaminidase 
+Glycoside hydrolase	GH164	beta-mannosidase
+Glycoside hydrolase	GH165	beta-galactosidase
+Glycoside hydrolase	GH166	alpha-1,4-galactosaminogalactan hydrolase
+Glycoside hydrolase	GH167	beta-carrageenase
+Glycoside hydrolase	GH16	xyloglucan:xyloglucosyltransferase
+Glycoside hydrolase	GH170	6-phospho-N-acetylmuramidase
+Glycoside hydrolase	GH171	peptidoglycan beta-N-acetylmuramidase
+Glycoside hydrolase	GH172	difructose-anhydride-I synthase (EC 4.2.1.179 (old 3.2.1.134)); alpha-D-Arabinofuranosidase
+Glycoside hydrolase	GH173	beta-galactosidase
+Glycoside hydrolase	GH17	glucan endo-1,3-beta-glucosidase
+Glycoside hydrolase	GH18	chitinase
+Glycoside hydrolase	GH19	chitinase
+Glycoside hydrolase	GH1	beta-glucosidase
+Glycoside hydrolase	GH20	beta-hexosaminidase
+Glycoside hydrolase	GH23	lysozyme type G
+Glycoside hydrolase	GH24	lysozyme
+Glycoside hydrolase	GH25	lysozyme
+Glycoside hydrolase	GH26	beta-mannanase
+Glycoside hydrolase	GH27	alpha-galactosidase
+Glycoside hydrolase	GH28	polygalacturonase
+Glycoside hydrolase	GH29	alpha-L-fucosidase
+Glycoside hydrolase	GH2	beta-galactosidase
+Glycoside hydrolase	GH30	endo-beta-1,4-xylanase
+Glycoside hydrolase	GH31	alpha-glucosidase
+Glycoside hydrolase	GH32	invertase
+Glycoside hydrolase	GH33	sialidase or neuraminidase
+Glycoside hydrolase	GH35	beta-galactosidase
+Glycoside hydrolase	GH36	alpha-galactosidase
+Glycoside hydrolase	GH37	alpha,alpha-trehalase
+Glycoside hydrolase	GH38	alpha-mannosidase
+Glycoside hydrolase	GH39	alpha-L-iduronidase
+Glycoside hydrolase	GH3	beta-glucosidase
+Glycoside hydrolase	GH42	beta-galactosidase
+Glycoside hydrolase	GH43	beta-xylosidase
+Glycoside hydrolase	GH44	endoglucanase
+Glycoside hydrolase	GH46	chitosanase
+Glycoside hydrolase	GH47	alpha-mannosidase
+Glycoside hydrolase	GH48	reducing end-acting cellobiohydrolase
+Glycoside hydrolase	GH49	dextranase
+Glycoside hydrolase	GH4	maltose-6-phosphate glucosidase
+Glycoside hydrolase	GH50	beta-agarase
+Glycoside hydrolase	GH51	endoglucanase
+Glycoside hydrolase	GH52	beta-xylosidase
+Glycoside hydrolase	GH53	endo-beta-1,4-galactanase
+Glycoside hydrolase	GH55	exo-beta-1,3-glucanase
+Glycoside hydrolase	GH57	alpha-amylase
+Glycoside hydrolase	GH59	beta-galactosidase
+Glycoside hydrolase	GH5	endo-beta-1,4-glucanase / cellulase
+Glycoside hydrolase	GH63	processing alpha-glucosidase
+Glycoside hydrolase	GH64	beta-1,3-glucanase
+Glycoside hydrolase	GH65	alpha,alpha-trehalase
+Glycoside hydrolase	GH66	cycloisomaltooligosaccharide glucanotransferase
+Glycoside hydrolase	GH67	alpha-glucuronidase
+Glycoside hydrolase	GH68	levansucrase
+Glycoside hydrolase	GH6	endoglucanase
+Glycoside hydrolase	GH70	dextransucrase
+Glycoside hydrolase	GH71	alpha-1,3-glucanase
+Glycoside hydrolase	GH73	lysozyme
+Glycoside hydrolase	GH74	endoglucanase
+Glycoside hydrolase	GH76	alpha-1,6-mannanase
+Glycoside hydrolase	GH77	amylomaltase or 4-alpha-glucanotransferase
+Glycoside hydrolase	GH78	alpha-L-rhamnosidase
+Glycoside hydrolase	GH79	beta-glucuronidase
+Glycoside hydrolase	GH81	endo-beta-1,3-glucanase
+Glycoside hydrolase	GH82	Iota;-carrageenase
+Glycoside hydrolase	GH84	N-acetyl beta-glucosaminidase
+Glycoside hydrolase	GH85	endo-beta-N-acetylglucosaminidase
+Glycoside hydrolase	GH86	beta-agarase
+Glycoside hydrolase	GH87	mycodextranase
+Glycoside hydrolase	GH88	d-4,5-unsaturated beta-glucuronyl hydrolase
+Glycoside hydrolase	GH89	alpha-N-acetylglucosaminidase
+Glycoside hydrolase	GH8	chitosanase
+Glycoside hydrolase	GH91	inulin lyase [DFA-I-forming]
+Glycoside hydrolase	GH92	mannosyl-oligosaccharide alpha-1,2-mannosidase
+Glycoside hydrolase	GH93	exo-alpha-L-1,5-arabinanase
+Glycoside hydrolase	GH94	cellobiose phosphorylase
+Glycoside hydrolase	GH95	alpha-L-fucosidase
+Glycoside hydrolase	GH97	glucoamylase
+Glycoside hydrolase	GH98	blood-group endo-beta-1,4-galactosidase
+Glycoside hydrolase	GH99	glycoprotein endo-alpha-1,2-mannosidase
+Glycoside hydrolase	GH9	endoglucanase
+Glycosyl trasferase	GT100	alpha-sialyltransferase
+Glycosyl trasferase	GT101	beta-glucosyltransferase
+Glycosyl trasferase	GT102	O-antigen-polysaccharide alpha-1,3-L-rhamnosyltransferase
+Glycosyl trasferase	GT103	O-antigen-polysaccharide beta-1,4-N-acetylglucosaminyltransferase
+Glycosyl trasferase	GT104	arginine alpha-L-rhamnosyltransferase
+Glycosyl trasferase	GT105	Dol-P-beta-D-Man: protein alpha-D-mannosyltransferase
+Glycosyl trasferase	GT107	CMP-beta-KDO: beta-2,4-KDO transferase
+Glycosyl trasferase	GT108	GDP-alpha-D-Manp: beta-1,2-D-mannosyltransferase
+Glycosyl trasferase	GT10	galactoside alpha-1,3/1,4-L-fucosyltransferase
+Glycosyl trasferase	GT111	UDP-Galf: beta-1,3-galactofuranosyltransferase
+Glycosyl trasferase	GT112	ADP-glyceromannoheptose: glycoprotein O-heptosyltransferase
+Glycosyl trasferase	GT113	glucosyltransferase/hexosyltransferase
+Glycosyl trasferase	GT11	GDP-L-Fuc: galactoside alpha-1,2-L-fucosyltransferase
+Glycosyl trasferase	GT12	[N-acetylneuraminyl]-galactosylglucosylceramide N-acetylgalactosaminyltransferase
+Glycosyl trasferase	GT14	beta-1,3-galactosyl-O-glycosyl-glycoprotein beta-1,6-N-acetylglucosaminyltransferase
+Glycosyl trasferase	GT17	beta-1,4-mannosyl-glycoprotein beta-1,4-N-acetylglucosaminyltransferase
+Glycosyl trasferase	GT19	lipid-A-disaccharide synthase
+Glycosyl trasferase	GT1	UDP-glucuronosyltransferase
+Glycosyl trasferase	GT20	alpha,alpha-trehalose-phosphate synthase [UDP-forming]
+Glycosyl trasferase	GT21	UDP-Glc: ceramide beta-glucosyltransferase
+Glycosyl trasferase	GT22	Dol-P-Man: Man6GlcNAc2-PP-Dol alpha-1,2-mannosyltransferase
+Glycosyl trasferase	GT23	N-acetyl-beta-D-glucosaminide alpha-1,6-L-fucosyltransferase
+Glycosyl trasferase	GT25	lipopolysaccharide beta-1,4-galactosyltransferase
+Glycosyl trasferase	GT26	UDP-ManNAcA: beta-N-acetyl mannosaminuronyltransferase
+Glycosyl trasferase	GT27	polypeptide alpha-N-acetylgalactosaminyltransferase
+Glycosyl trasferase	GT28	1,2-diacylglycerol 3-beta-galactosyltransferase
+Glycosyl trasferase	GT29	sialyltransferase
+Glycosyl trasferase	GT30	CMP-beta-KDO: alpha-3-deoxy-D-manno-octulosonic-acid (KDO) transferase
+Glycosyl trasferase	GT31	N-acetyllactosaminide beta-1,3-N-acetylglucosaminyltransferase
+Glycosyl trasferase	GT32	alpha-1,6-mannosyltransferase
+Glycosyl trasferase	GT35	glycogen or starch phosphorylase
+Glycosyl trasferase	GT39	Dol-P-Man: protein alpha-mannosyltransferase
+Glycosyl trasferase	GT3	glycogen synthase
+Glycosyl trasferase	GT41	UDP-GlcNAc: peptide beta-N-acetylglucosaminyltransferase
+Glycosyl trasferase	GT45	alpha-N-acteylglucosaminyltransferase
+Glycosyl trasferase	GT4	sucrose synthase
+Glycosyl trasferase	GT51	murein polymerase
+Glycosyl trasferase	GT52	alpha-2,3-sialyltransferase
+Glycosyl trasferase	GT56	TDP-Fuc4NAc: lipid II Fuc4NAc transferase
+Glycosyl trasferase	GT5	UDP-Glc: glycogen glucosyltransferase
+Glycosyl trasferase	GT66	dolichyl-diphosphooligosaccharideâ€”protein glycotransferase
+Glycosyl trasferase	GT6	alpha-1,3-galactosyltransferase
+Glycosyl trasferase	GT73	CMP-beta-KDO: alpha-3-deoxy-D-manno-octulosonic-acid (KDO) transferase
+Glycosyl trasferase	GT74	alpha-1,2-L-fucosyltransferase
+Glycosyl trasferase	GT75	UDP-Glc: self-glucosylating beta-glucosyltransferase
+Glycosyl trasferase	GT76	Dol-P-Man: alpha-1,6-mannosyltransferase
+Glycosyl trasferase	GT80	beta-galactoside alpha-2,6-sialyltransferase
+Glycosyl trasferase	GT81	NDP-Glc: glucosyl-3-phosphoglycerate synthase
+Glycosyl trasferase	GT83	undecaprenyl phosphate-alpha-L-Ara4N: 4-amino-4-deoxy-beta-L-arabinosyltransferase
+Glycosyl trasferase	GT84	cyclic beta-1,2-glucan synthase
+Glycosyl trasferase	GT87	polyprenol-P-Man: alpha-1,2-mannosyltransferase
+Glycosyl trasferase	GT8	lipopolysaccharide alpha-1,3-galactosyltransferase
+Glycosyl trasferase	GT90	UDP-Xyl: (mannosyl) glucuronoxylomannan/galactoxylomannan beta-1,2-xylosyltransferase
+Glycosyl trasferase	GT92	UDP-Gal: N-glycan core alpha-1,6-fucoside beta-1,4-galactosyltransferase
+Glycosyl trasferase	GT94	GlcA-beta-1,2-Man-alpha-1,3-Glc-beta-1,4-Glc-alpha-1-PP-undecaprenol beta-1,4-mannosyltransferase
+Glycosyl trasferase	GT99	CMP-beta-KDO 3-deoxy-beta-D-manno-oct-2-ulosonic acid transferase
+Glycosyl trasferase	GT9	lipopolysaccharide N-acetylglucosaminyltransferase
+Polysacharide lyases	PL10	pectate lyase
+Polysacharide lyases	PL11	rhamnogalacturonan endolyase
+Polysacharide lyases	PL12	heparin-sulfate lyase
+Polysacharide lyases	PL13	heparin lyase
+Polysacharide lyases	PL14	poly(beta-mannuronate) lyase / M-specific alginate lyase
+Polysacharide lyases	PL15	alginate lyase
+Polysacharide lyases	PL17	alginate lyase
+Polysacharide lyases	PL1	pectate lyase
+Polysacharide lyases	PL21	heparin lyase
+Polysacharide lyases	PL22	oligogalacturonate lyase / oligogalacturonide lyase
+Polysacharide lyases	PL24	ulvan lyase
+Polysacharide lyases	PL26	rhamnogalacturonan exolyase
+Polysacharide lyases	PL27	L-rhamnose-alpha-1,4-D-glucuronate lyase
+Polysacharide lyases	PL29	chondroitin-sulfate ABC endolyase
+Polysacharide lyases	PL2	pectate lyase
+Polysacharide lyases	PL30	hyaluronate lyase
+Polysacharide lyases	PL31	endo-beta-1,4-glucuronan lyase
+Polysacharide lyases	PL32	poly(beta-mannuronate) lyase / M-specific alginate lyase
+Polysacharide lyases	PL33	hyaluronate lyase
+Polysacharide lyases	PL34	alginate lyase
+Polysacharide lyases	PL35	chondroitin lyase / chondroitinase
+Polysacharide lyases	PL37	chondroitin-sulfate ABC endolyase
+Polysacharide lyases	PL38	endo-beta-1,4-glucuronan lyase
+Polysacharide lyases	PL39	alginate lyase
+Polysacharide lyases	PL40	ulvan lyase
+Polysacharide lyases	PL42	L-rhamnose-alpha-1,4-D-glucuronate lyase
+Polysacharide lyases	PL4	rhamnogalacturonan endolyase
+Polysacharide lyases	PL5	alginate lyase
+Polysacharide lyases	PL6	alginate lyase
+Polysacharide lyases	PL7	poly(beta-mannuronate) lyase / M-specific alginate lyase
+Polysacharide lyases	PL8	hyaluronate lyase
+Polysacharide lyases	PL9	pectate lyase

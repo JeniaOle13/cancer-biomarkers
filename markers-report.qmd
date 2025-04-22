@@ -127,7 +127,6 @@ meta_data <- read.csv("data/meta_data.tsv", sep = "\t")
 
 ```{r}
 #| include: false
-#| 
 
 ogu_table <- read.csv("data/ogu_table.tsv", sep = "\t")
 ```
@@ -169,33 +168,7 @@ tax_table <- tax_table[rownames(tax_table) %in% colnames(ogu_table),]
 ```{r}
 #| include: false
 
-raw_stat <- read.csv("data/raw_stat.tsv", sep = "\t")
-filtered_stat <- read.csv("data/filtered_stat.tsv", sep = "\t")
-
-raw_stat_sbs <- raw_stat[c(1,2,5)]
-filtered_stat_sbs <- filtered_stat[c(1,5)]
-
-raw_stat_sbs$num_seqs <- gsub("\\,", "", raw_stat_sbs$num_seqs)
-filtered_stat_sbs$num_seqs <- gsub("\\,", "", filtered_stat_sbs$num_seqs)
-
-raw_stat_sbs$num_seqs <- as.numeric(raw_stat_sbs$num_seqs)
-filtered_stat_sbs$num_seqs <- as.numeric(filtered_stat_sbs$num_seqs)
-
-colnames(raw_stat_sbs)[3] <- "raw"
-colnames(filtered_stat_sbs)[2] <- "filtered"
-
-statistic <- merge(raw_stat_sbs, filtered_stat_sbs, by = 1)
-
-statistic$`%_filtered`<- round(100-(100*statistic$filtered/statistic$raw))
-
-statistic$raw <- round(statistic$raw/1000000)
-statistic$filtered <- round(statistic$filtered/1000000)
-
-statistic$filtered <- statistic$raw - statistic$filtered
-
-colnames(statistic)[c(3,4)] <- c("raw, mln", "filtered, mln")
-
-rownames(statistic) <- 1:nrow(statistic)
+statistic <- read.csv("data/statistic.tsv", sep = "\t")
 ```
 
 ```{r}
@@ -209,6 +182,7 @@ ogu_table_t <- ogu_table_t[-1]
 
 ```{r}
 #| include: false
+
 ogu.markers <- read.csv("data/ogu.biomarkers.tsv", sep = "\t")
 ogu.markers <- merge(ogu.markers[c(2,1,3:6)], cbind(rownames(tax_table), tax_table), by = 1)
 ```
@@ -283,6 +257,16 @@ loc <- loc %>%
     lat_lon == '53.80605739 N -1.522751916 W' ~ lon + 5,
     lat_lon == '53.22142806 N 6.574345097 E' ~ lon + 20,
     .default = lon))
+```
+
+```{r}
+#| include: false
+#| warning: false
+CAZy <- read.csv("data/CAZy.tsv", sep = "\t")
+KEGG <- read.csv("data/KEGG.tsv", sep = "\t")
+
+CAZy_sets <- read.csv("data/CAZy-sets.tsv", sep = "\t")
+KEGG_sets <- read.csv("data/KEGG-sets.tsv", sep = "\t")
 ```
 
 # Results
@@ -447,10 +431,14 @@ coef_barplot
 
 ```{r}
 #| include: false
+library(zCompositions)
+
+ogu_table.markers <- ogu_table[colnames(ogu_table) %in% ogu.markers$featureid]
+ogu_table.markers <- ogu_table.markers + 0.0001
 
 df.log_ratio <- NULL
-for (i in rownames(ogu_table)){
-    df <- ogu_table[rownames(ogu_table) %in% i,]
+for (i in rownames(ogu_table.markers)){
+    df <- ogu_table.markers[rownames(ogu_table.markers) %in% i,]
     
     df_denominator <- df[colnames(df) %in% ogu.markers$featureid[ogu.markers$biomarker == "denominator"]]
     df_numerator <- df[colnames(df) %in% ogu.markers$featureid[ogu.markers$biomarker == "numerator"]]
@@ -463,11 +451,7 @@ for (i in rownames(ogu_table)){
     df.log_ratio <- rbind(df.s, df.log_ratio)
 }
 
-df.log_ratio <- merge(df.log_ratio, meta_data, by = 1)
-df.log_ratio <- df.log_ratio[df.log_ratio$log_ratio != Inf,]
-df.log_ratio <- df.log_ratio[df.log_ratio$log_ratio != -Inf,]
-df.log_ratio <- df.log_ratio[!is.na(df.log_ratio$sampleid),]
-df.log_ratio <- df.log_ratio[!is.na(df.log_ratio$log_ratio),]
+df.log_ratio <- merge(meta_data, df.log_ratio, by = 1)
 ```
 
 ```{r}
@@ -547,22 +531,15 @@ cohens_d(log_ratio ~ response, data=df.log_ratio)
 #| message: false
 #| warning: false
 #| include: false
-df.log_ratio_centered <- df.log_ratio %>%
-    group_by(dataset) %>%
-    mutate(log_ratio_centered = log_ratio - mean(log_ratio, na.rm = TRUE)) %>%
-    ungroup()
 
-df.log_ratio_centered <- as.data.frame(df.log_ratio_centered)
+df.log_ratio <- merge(df.log_ratio, statistic[-2], by = 1)
 
-df.log_ratio_centered <- merge(df.log_ratio_centered, statistic[-2], by = 1)
-df.log_ratio_centered$nreads <- df.log_ratio_centered$`raw, mln` - df.log_ratio_centered$`filtered, mln`
+df.log_ratio$response <- factor(df.log_ratio$response, levels = c("R", "NR"))
+df.log_ratio$dataset <- factor(df.log_ratio$dataset)
 
-df.log_ratio_centered$response <- factor(df.log_ratio_centered$response, levels = c("R", "NR"))
-df.log_ratio_centered$dataset <- factor(df.log_ratio_centered$dataset)
+groups <- unique(df.log_ratio$dataset)
 
-groups <- unique(df.log_ratio_centered$dataset)
-
-recipe_balanced <- recipe(response ~ log_ratio + nreads, data = df.log_ratio_centered) %>%
+recipe_balanced <- recipe(response ~ log_ratio, data = df.log_ratio) %>%
   step_dummy(all_nominal_predictors()) %>%
   step_normalize(all_numeric_predictors()) %>%
   step_smote(response, over_ratio = 0.8)
@@ -577,8 +554,8 @@ workflow_balanced <- workflow() %>%
 
 logo_cv <- function(group) {
   
-  test_data <- df.log_ratio_centered %>% filter(dataset == group)
-  train_data <- df.log_ratio_centered %>% filter(dataset != group)
+  test_data <- df.log_ratio %>% filter(dataset == group)
+  train_data <- df.log_ratio %>% filter(dataset != group)
   
   
   fitted_model <- fit(workflow_balanced, data = train_data)
@@ -786,22 +763,30 @@ gsea_genus_plot
 #| message: false
 #| warning: false
 #| include: false
-fgsea_food <- GSEA(vec, TERM2GENE = food[c(2,1)], eps = 0)
+
+food$site <- "Food"
+fgsea_food <- GSEA(vec, TERM2GENE = food[c(2,1)], eps = 0, pAdjustMethod = "BH")
 
 fgsea_food_df <- as.data.frame(fgsea_food)
 rownames(fgsea_food_df) <- 1:nrow(fgsea_food_df)
 fgsea_food_df <- fgsea_food_df[-2]
 fgsea_food_df <- fgsea_food_df[order(fgsea_food_df$NES, decreasing = T),]
 
-fgsea_bodysite <- GSEA(vec, TERM2GENE = body_site[c(2,1)])
+core_enrichment_food <- tax_table[rownames(tax_table) %in% unlist(str_split(fgsea_food_df$core_enrichment, pattern = "\\/")),]
+core_enrichment_food <- core_enrichment_food[order(core_enrichment_food$species),]
+
+fgsea_bodysite <- GSEA(vec, TERM2GENE = body_site[c(2,1)], pAdjustMethod = "BH")
 
 fgsea_bodysite_df <- as.data.frame(fgsea_bodysite)
 rownames(fgsea_bodysite_df) <- 1:nrow(fgsea_bodysite_df)
 fgsea_bodysite_df <- fgsea_bodysite_df[-2]
 fgsea_bodysite_df <- fgsea_bodysite_df[order(fgsea_bodysite_df$NES, decreasing = T),]
 
-gsea_food_plot <- gseaNb(object = fgsea_food, 
-       geneSetID = 'food', 
+core_enrichment_bodysite <- tax_table[rownames(tax_table) %in% unlist(str_split(fgsea_bodysite_df$core_enrichment, pattern = "\\/")),]
+core_enrichment_bodysite <- core_enrichment_bodysite[order(core_enrichment_bodysite$species),]
+
+gsea_food_plot <- gseaNb(fgsea_food, 
+       geneSetID = 'Food', 
        htCol = c("#A50F15", "#08519C"))
 
 gsea_bodysite_plot <- gseaNb(object = fgsea_bodysite,
@@ -815,6 +800,18 @@ gsea_bodysite_plot <- gseaNb(object = fgsea_bodysite,
 #| warning: false
 datatable(fgsea_food_df[1:8], 
           caption = "Table 9. GSEA results: food.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(core_enrichment_food, 
+          caption = "Table 10. GSEA results: food - core enrichment.",
           style = "bootstrap5", 
           extensions = 'Buttons', 
           options = list(dom = 'lBfrtip',
@@ -845,7 +842,19 @@ gsea_food_plot
 #| message: false
 #| warning: false
 datatable(fgsea_bodysite_df[1:8], 
-          caption = "Table 10. GSEA results: bodysite.",
+          caption = "Table 11. GSEA results: bodysite.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(core_enrichment_bodysite, 
+          caption = "Table 12. GSEA results: bodysite - core enrichment.",
           style = "bootstrap5", 
           extensions = 'Buttons', 
           options = list(dom = 'lBfrtip',
@@ -870,3 +879,152 @@ download_this(
 #| fig-cap: Figure 8. GSEA results bodysite.
 gsea_bodysite_plot
 ```
+
+## Functional analysis
+```{r}
+
+cazy.genes <- data.frame()  # Лучше инициализировать как пустой data.frame
+
+for(i in colnames(CAZy)) {
+  ft <- cbind(rownames(CAZy), CAZy[, i, drop = FALSE])  # Более безопасное подмножество
+  colnames(ft) <- c("id", "gene")
+  
+  ft <- merge(ogu.markers, ft, by = 1)
+  ft <- ft[, c(1, 2, ncol(ft))]  # Более универсальный выбор столбцов
+  colnames(ft)[3] <- "gene"
+  
+  ft$biomarker <- as.factor(ft$biomarker)
+  ft$gene <- as.factor(ft$gene)
+  
+  if (nlevels(ft$gene) > 1) {  # Более надежная проверка уровней факторов
+    # Вычисление OR
+    OR <- oddsratio(table(ft[, c("biomarker", "gene")]))
+    
+    # Логистическая регрессия
+    model <- glm(biomarker ~ gene, 
+                 data = ft,
+                 family = binomial())
+    
+    # Сохранение результатов
+    cazy.genes <- rbind(cazy.genes, 
+                        data.frame(
+                          gene = i, 
+                          coefficient = coef(model)[2], 
+                          odds_ratio = OR$Odds_ratio,
+                          CI_low = OR$CI_low,
+                          CI_high = OR$CI_high,
+                          p_value = summary(model)$coefficients[2,4]
+                        ))
+  }
+}
+
+cazy.genes <- cazy.genes[cazy.genes$CI_low != "NaN",]
+cazy.genes <- cazy.genes[cazy.genes$CI_high != "NaN",]
+
+vec_cazy <- -log10(cazy.genes$p_value)
+names(vec_cazy) <- cazy.genes$gene
+
+cazy_coef <- cazy.genes$coefficient
+cazy_coef[cazy_coef > 0] <- 1
+cazy_coef[cazy_coef < 0] <- -1
+
+vec_cazy <- vec_cazy*cazy_coef
+
+vec_cazy <- sort(vec_cazy, decreasing = T)
+
+fgsea_cazy <- GSEA(vec_cazy, TERM2GENE = CAZy_sets[c(1,2)], eps = 0, pAdjustMethod = "BH")
+
+fgsea_cazy_df <- as.data.frame(fgsea_cazy)
+rownames(fgsea_cazy_df) <- 1:nrow(fgsea_cazy_df)
+fgsea_cazy_df <- fgsea_cazy_df[-2]
+fgsea_cazy_df <- fgsea_cazy_df[order(fgsea_cazy_df$NES, decreasing = T),]
+
+core_enrichment_GH <- unlist(str_split(fgsea_cazy_df$core_enrichment, pattern = "\\/"))
+core_enrichment_GH <- merge(data.frame(core_enrichment_GH), CAZy_sets[c(2,3)], by = 1)
+colnames(core_enrichment_GH) <- c("family", "function")
+core_enrichment_GH <- core_enrichment_GH[order(core_enrichment_GH$family),]
+
+gsea_cazy_plot <- gseaNb(fgsea_cazy, 
+       geneSetID = fgsea_cazy_df$ID, 
+       htCol = c("#A50F15", "#08519C"))
+```
+
+```{r}
+CAZy_core <- CAZy[colnames(CAZy) %in% core_enrichment_GH$family]
+CAZy_core <- CAZy_core[rowSums(CAZy_core) > 20,]
+CAZy_core <- as.data.frame(rowSums(CAZy_core))
+
+CAZy_core <- merge(ogu.markers, cbind(rownames(CAZy_core), CAZy_core), by = 1)
+colnames(CAZy_core)[ncol(CAZy_core)] <- "core_cazy"
+CAZy_core$status <- 1
+
+CAZy_core <- CAZy_core[c("genus", "biomarker", "status")] %>% group_by(genus, biomarker) %>% summarise(freq = sum(status))
+CAZy_core <- CAZy_core[order(CAZy_core$freq, decreasing = T),]
+```
+
+```{r}
+kegg.genes <- data.frame()  # Лучше инициализировать как пустой data.frame
+
+for(i in colnames(KEGG)) {
+  ft <- cbind(rownames(KEGG), KEGG[, i, drop = FALSE])  # Более безопасное подмножество
+  colnames(ft) <- c("id", "gene")
+  
+  ft <- merge(ogu.markers, ft, by = 1)
+  ft <- ft[, c(1, 2, ncol(ft))]  # Более универсальный выбор столбцов
+  colnames(ft)[3] <- "gene"
+  
+  ft$biomarker <- as.factor(ft$biomarker)
+  ft$gene <- as.factor(ft$gene)
+  
+  if (nlevels(ft$gene) > 1) {  # Более надежная проверка уровней факторов
+    # Вычисление OR
+    OR <- oddsratio(table(ft[, c("biomarker", "gene")]))
+    
+    # Логистическая регрессия
+    model <- glm(biomarker ~ gene, 
+                 data = ft,
+                 family = binomial())
+    
+    # Сохранение результатов
+    kegg.genes <- rbind(kegg.genes, 
+                        data.frame(
+                          gene = i, 
+                          coefficient = coef(model)[2], 
+                          odds_ratio = OR$Odds_ratio,
+                          CI_low = OR$CI_low,
+                          CI_high = OR$CI_high,
+                          p_value = summary(model)$coefficients[2,4]
+                        ))
+  }
+}
+
+kegg.genes <- kegg.genes[kegg.genes$CI_low != "NaN",]
+kegg.genes <- kegg.genes[kegg.genes$CI_high != "NaN",]
+
+vec_kegg <- -log10(kegg.genes$p_value)
+names(vec_kegg) <- kegg.genes$gene
+
+kegg_coef <- kegg.genes$coefficient
+kegg_coef[kegg_coef > 0] <- 1
+kegg_coef[kegg_coef < 0] <- -1
+
+vec_kegg <- vec_kegg*kegg_coef
+
+vec_kegg <- sort(vec_kegg, decreasing = T)
+
+fgsea_kegg <- gseKEGG(geneList = vec_kegg, organism = "ko", eps = 0, pAdjustMethod = "BH", pvalueCutoff = 0.01)
+
+fgsea_kegg_df <- as.data.frame(fgsea_kegg)
+rownames(fgsea_kegg_df) <- 1:nrow(fgsea_kegg_df)
+fgsea_kegg_df <- fgsea_kegg_df[-2]
+fgsea_kegg_df <- fgsea_kegg_df[order(fgsea_kegg_df$NES, decreasing = T),]
+
+gsea_cazy_plot <- gseaNb(fgsea_kegg, 
+       geneSetID = fgsea_kegg_df$ID, 
+       curveCol = c(brewer.pal(name = "Set1", n = 9)[-6], "cyan4"),
+       htCol = c("#A50F15", "#08519C"))
+
+core_enrichment_WL <- unlist(str_split(fgsea_kegg_df$core_enrichment[[1]], pattern = "\\/"))
+as.factor(core_enrichment_WL)
+```
+
