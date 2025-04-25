@@ -679,6 +679,14 @@ fgsea_phylum_df <- as.data.frame(fgsea_phylum)
 rownames(fgsea_phylum_df) <- 1:nrow(fgsea_phylum_df)
 fgsea_phylum_df <- fgsea_phylum_df[-2]
 
+core_enrichment_phylum_1 <- data.frame(featureid = unlist(str_split(fgsea_phylum_df$core_enrichment[[1]], "\\/")))
+core_enrichment_phylum_1 <- merge(core_enrichment_phylum_1, ogu.markers, by = 1)
+core_enrichment_phylum_1 <- core_enrichment_phylum_1[c(1,7:13)]
+
+core_enrichment_phylum_2 <- data.frame(featureid = unlist(str_split(fgsea_phylum_df$core_enrichment[[2]], "\\/")))
+core_enrichment_phylum_2 <- merge(core_enrichment_phylum_2, ogu.markers, by = 1)
+core_enrichment_phylum_2 <- core_enrichment_phylum_2[c(1,7:13)]
+
 fgsea_genus <- GSEA(vec, TERM2GENE = ogu.markers[c(12,1)], eps = 0)
 
 fgsea_genus_df <- as.data.frame(fgsea_genus)
@@ -709,6 +717,30 @@ datatable(fgsea_phylum_df[1:8],
                          buttons = c('csv', 'excel')))
 ```
 
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(core_enrichment_phylum_1, 
+          caption = "Table 8. GSEA results phylum level - Bacteroidetes core enrichment.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(core_enrichment_phylum_2, 
+          caption = "Table 9. GSEA results phylum level - Proteobacteria core enrichment.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
 ```{r fig.width=6, fig.height=5.5}
 #| message: false
 #| warning: false
@@ -733,7 +765,7 @@ gsea_phylum_plot
 #| message: false
 #| warning: false
 datatable(fgsea_genus_df[1:8], 
-          caption = "Table 8. GSEA results genus level.",
+          caption = "Table 10. GSEA results genus level.",
           style = "bootstrap5", 
           extensions = 'Buttons', 
           options = list(dom = 'lBfrtip',
@@ -799,7 +831,7 @@ gsea_bodysite_plot <- gseaNb(object = fgsea_bodysite,
 #| message: false
 #| warning: false
 datatable(fgsea_food_df[1:8], 
-          caption = "Table 9. GSEA results: food.",
+          caption = "Table 11. GSEA results: food.",
           style = "bootstrap5", 
           extensions = 'Buttons', 
           options = list(dom = 'lBfrtip',
@@ -811,7 +843,7 @@ datatable(fgsea_food_df[1:8],
 #| message: false
 #| warning: false
 datatable(core_enrichment_food, 
-          caption = "Table 10. GSEA results: food - core enrichment.",
+          caption = "Table 12. GSEA results: food - core enrichment.",
           style = "bootstrap5", 
           extensions = 'Buttons', 
           options = list(dom = 'lBfrtip',
@@ -842,7 +874,7 @@ gsea_food_plot
 #| message: false
 #| warning: false
 datatable(fgsea_bodysite_df[1:8], 
-          caption = "Table 11. GSEA results: bodysite.",
+          caption = "Table 13. GSEA results: bodysite.",
           style = "bootstrap5", 
           extensions = 'Buttons', 
           options = list(dom = 'lBfrtip',
@@ -854,7 +886,7 @@ datatable(fgsea_bodysite_df[1:8],
 #| message: false
 #| warning: false
 datatable(core_enrichment_bodysite, 
-          caption = "Table 12. GSEA results: bodysite - core enrichment.",
+          caption = "Table 14. GSEA results: bodysite - core enrichment.",
           style = "bootstrap5", 
           extensions = 'Buttons', 
           options = list(dom = 'lBfrtip',
@@ -881,7 +913,10 @@ gsea_bodysite_plot
 ```
 
 ## Functional analysis
+#### GSEA
+###### CAZy
 ```{r}
+#| include: false
 
 cazy.genes <- data.frame()  # Лучше инициализировать как пустой data.frame
 
@@ -950,19 +985,96 @@ gsea_cazy_plot <- gseaNb(fgsea_cazy,
 ```
 
 ```{r}
-CAZy_core <- CAZy[colnames(CAZy) %in% core_enrichment_GH$family]
-CAZy_core <- CAZy_core[rowSums(CAZy_core) > 20,]
-CAZy_core <- as.data.frame(rowSums(CAZy_core))
-
-CAZy_core <- merge(ogu.markers, cbind(rownames(CAZy_core), CAZy_core), by = 1)
-colnames(CAZy_core)[ncol(CAZy_core)] <- "core_cazy"
-CAZy_core$status <- 1
-
-CAZy_core <- CAZy_core[c("genus", "biomarker", "status")] %>% group_by(genus, biomarker) %>% summarise(freq = sum(status))
-CAZy_core <- CAZy_core[order(CAZy_core$freq, decreasing = T),]
+#| echo: false
+#| message: false
+#| warning: false
+datatable(fgsea_cazy_df[1:8], 
+          caption = "Table 15. GSEA results: CAZy.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
 ```
 
 ```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(core_enrichment_GH, 
+          caption = "Table 15. GSEA results: CAZy - core enrichment.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.height=3.5, fig.width=4.5}
+#| message: false
+#| warning: false
+#| include: false
+download_this(
+  gsea_cazy_plot,
+  output_name = "gsea_food_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=4.5, fig.height=3.5}
+#| echo: false
+#| fig-cap: Figure 9. GSEA results CAZy.
+gsea_cazy_plot
+```
+
+```{r}
+#| include: false
+CAZy_core <- CAZy[colnames(CAZy) %in% core_enrichment_GH$family]
+CAZy_core <- CAZy_core[rowSums(CAZy_core) > round(length(core_enrichment_GH$family)*65/100),]
+
+CAZy_core_df <- data.frame(featureid = row.names(CAZy_core))
+CAZy_core_df$freq = 1
+
+CAZy_core_df <- merge(CAZy_core_df, ogu.markers, by = 1)
+
+CAZy_core_df_2 <- CAZy_core_df %>% group_by(genus, phylum, biomarker) %>% summarise(freq = sum(freq))
+CAZy_core_df_2 <- CAZy_core_df_2[order(CAZy_core_df_2$freq, decreasing = T),]
+CAZy_core_df_2$biomarker <- as.factor(CAZy_core_df_2$biomarker)
+
+cazy_barplot <- ggplot(CAZy_core_df_2, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 65% core enrichment genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("Glysosil hydrolase")
+      
+```
+
+```{r fig.width=6, fig.height=4}
+#| message: false
+#| warning: false
+#| include: false
+download_this(
+  cazy_barplot,
+  output_name = "gsea_food_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=6, fig.height=4}
+#| echo: false
+#| fig-cap: Figure 10. Links between CAZy core enrichment GH and marker OGU.
+cazy_barplot
+```
+
+###### KEGG
+```{r}
+#| include: false
 kegg.genes <- data.frame()  # Лучше инициализировать как пустой data.frame
 
 for(i in colnames(KEGG)) {
@@ -1001,6 +1113,8 @@ for(i in colnames(KEGG)) {
 kegg.genes <- kegg.genes[kegg.genes$CI_low != "NaN",]
 kegg.genes <- kegg.genes[kegg.genes$CI_high != "NaN",]
 
+kegg.genes$p_adj <- p.adjust(kegg.genes$p_value, method = "BH")
+
 vec_kegg <- -log10(kegg.genes$p_value)
 names(vec_kegg) <- kegg.genes$gene
 
@@ -1009,22 +1123,234 @@ kegg_coef[kegg_coef > 0] <- 1
 kegg_coef[kegg_coef < 0] <- -1
 
 vec_kegg <- vec_kegg*kegg_coef
-
+ 
 vec_kegg <- sort(vec_kegg, decreasing = T)
 
-fgsea_kegg <- gseKEGG(geneList = vec_kegg, organism = "ko", eps = 0, pAdjustMethod = "BH", pvalueCutoff = 0.01)
+set.seed(123)
+fgsea_kegg <- gseKEGG(geneList = vec_kegg, organism = "ko", eps = 0, pvalueCutoff = 0.01)
 
 fgsea_kegg_df <- as.data.frame(fgsea_kegg)
 rownames(fgsea_kegg_df) <- 1:nrow(fgsea_kegg_df)
 fgsea_kegg_df <- fgsea_kegg_df[-2]
 fgsea_kegg_df <- fgsea_kegg_df[order(fgsea_kegg_df$NES, decreasing = T),]
 
-gsea_cazy_plot <- gseaNb(fgsea_kegg, 
-       geneSetID = fgsea_kegg_df$ID, 
-       curveCol = c(brewer.pal(name = "Set1", n = 9)[-6], "cyan4"),
-       htCol = c("#A50F15", "#08519C"))
+fgsea_kegg_df$name <- c("Histidine metabolism", 
+                        "2-Oxocarboxylic acid metabolism", 
+                        "Valine, leucine and isoleucine biosynthesis", 
+                        "Arginine biosynthesis", 
+                        "Biosynthesis of amino acids", 
+                        "Sulfur metabolism", 
+                        "Pentose and glucuronate interconversions", 
+                        "Biosynthesis of cofactors", 
+                        "Lipopolysaccharide biosynthesis", 
+                        "Flagellar assembly")
 
-core_enrichment_WL <- unlist(str_split(fgsea_kegg_df$core_enrichment[[1]], pattern = "\\/"))
-as.factor(core_enrichment_WL)
+gsea_kegg_plot <- gseaNb(fgsea_kegg,
+       geneSetID = fgsea_kegg_df$ID,
+       curveCol = c(brewer.pal(name = "Set1", n = 9)[-6], "cyan4", "darkmagenta", "black"),
+       htCol = c("#A50F15", "#08519C"))
 ```
 
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(fgsea_kegg_df[1:8], 
+          caption = "Table 15. GSEA results: KEGG.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.height=7.5, fig.width=5}
+#| message: false
+#| warning: false
+#| include: false
+download_this(
+  gsea_kegg_plot,
+  output_name = "gsea_kegg_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=7.5, fig.height=5}
+#| echo: false
+#| fig-cap: Figure 11. GSEA results CAZy.
+gsea_kegg_plot
+```
+
+```{r}
+#| include: false
+
+core_enrich <- function(df){
+      core_enrichment <- data.frame()
+      for (i in 1:length(df$core_enrichment)){
+            df_enrichment <- unlist(str_split(df$core_enrichment[[i]], pattern = "\\/"))
+            df_enrichment <- data.frame(df_enrichment)
+            colnames(df_enrichment) <- c("KO")
+            
+            df_enrichment$pathway <- df[,1][i]
+            
+            core_enrichment <- rbind(df_enrichment, core_enrichment)
+      }
+      return(core_enrichment)
+}
+
+core_enrich_kegg <- core_enrich(fgsea_kegg_df)
+
+KEGG_core <- KEGG[colnames(KEGG) %in% unique(core_enrich_kegg$KO)]
+
+pathways <- unique(core_enrich_kegg$pathway)
+
+processing_pathway <- function(pathway, perc){
+      ko_list <- core_enrich_kegg$KO[core_enrich_kegg$pathway %in% pathway]
+
+      KEGG_core_sbs <- KEGG_core[ko_list]
+      KEGG_core_sbs <- rowSums(KEGG_core_sbs)
+      KEGG_core_sbs <- KEGG_core_sbs[KEGG_core_sbs > round(length(ko_list)*perc/100)]
+
+      KEGG_core_sbs <- as.data.frame(KEGG_core_sbs)
+      colnames(KEGG_core_sbs) <- "freq"
+      KEGG_core_sbs$freq = 1
+      KEGG_core_sbs <- cbind(feaureid = rownames(KEGG_core_sbs), KEGG_core_sbs)
+      KEGG_core_sbs <- merge(KEGG_core_sbs, ogu.markers, by = 1)
+
+      KEGG_core_sbs_2 <- KEGG_core_sbs %>% group_by(genus, phylum, biomarker) %>% summarise(freq = sum(freq))
+      KEGG_core_sbs_2 <- KEGG_core_sbs_2[order(KEGG_core_sbs_2$freq, decreasing = T),]
+      KEGG_core_sbs_2$biomarker <- as.factor(KEGG_core_sbs_2$biomarker)
+      KEGG_core_sbs_2$phylum <- as.factor(KEGG_core_sbs_2$phylum)
+      
+      return(KEGG_core_sbs_2)
+}
+
+ko02040 <- processing_pathway(pathways[1], 60)
+ko00540 <- processing_pathway(pathways[2], 60)
+ko01240 <- processing_pathway(pathways[3], 65)
+ko00040 <- processing_pathway(pathways[4], 60)
+ko00920 <- processing_pathway(pathways[5], 50)
+ko01230 <- processing_pathway(pathways[6], 75)
+ko00220 <- processing_pathway(pathways[7], 65)
+ko00290 <- processing_pathway(pathways[8], 85)
+ko01210 <- processing_pathway(pathways[9], 80)
+ko00340 <- processing_pathway(pathways[10], 87)
+
+ko02040_barplot <- ggplot(ko02040, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 60% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko02040: Flagellar assembly")
+
+ko00540_barplot <- ggplot(ko00540, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 60% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko00540: Lipopolysaccharide biosynthesis")
+
+ko01240_barplot <- ggplot(ko01240, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 60% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko01240: Biosynthesis of cofactors")
+
+ko00040_barplot <- ggplot(ko00040, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 60% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko00040: Pentose and glucuronate interconversions")
+
+ko00920_barplot <- ggplot(ko00920, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 50% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko00920: Sulfur metabolism")
+
+ko01230_barplot <- ggplot(ko01230, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 75% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko01230: Biosynthesis of amino acids")
+
+ko00220_barplot <- ggplot(ko00220, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 65% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko00220: Arginine biosynthesis")
+
+ko00290_barplot <- ggplot(ko00290, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 85% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko00290: Valine, leucine and isoleucine biosynthesis")
+
+ko01210_barplot <- ggplot(ko01210, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 80% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko01210: 2-Oxocarboxylic acid metabolism")
+
+ko00340_barplot <- ggplot(ko00340, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 87% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko00340: Histidine metabolism")
+```
+
+```{r}
+#| include: false
+kegg_barplot <- ggarrange(
+      ko00340_barplot, 
+      ko01210_barplot, 
+      ko00290_barplot, 
+      ko00220_barplot, 
+      ko01230_barplot, 
+      ko00920_barplot, 
+      ko00040_barplot, 
+      ko01240_barplot, 
+      ko00540_barplot, 
+      ko02040_barplot, 
+      ncol = 2, nrow = 5
+)
+```
