@@ -1,45 +1,84 @@
 ---
 format: html
 editor: source
+title: "Non-Intestinal Microbial Signatures within Stool as Predictors of Cancer Immunotherapy Outcome"
 ---
-
-# Materials and methods
-## Data acquisition and preprocessing
+# Introduction
 <p style="text-align: justify;">
-All 627 stool metagenomic samples from 11 published studies were downloaded from the NCBI/EBI databases using Kingfisher v0.4.1 [Woodcroft, 2022]. Data quality was assessed with FastQC v0.12.1 [Andrews et al., 2023], and raw reads were processed with fastp v0.23.4 to remove low-quality sequences [Chen et al., 2018]. Human-derived sequences were filtered out using HISAT2 v2.2 [Kim et al., 2019] with the GRCh37 human genome (Release 47) as a reference [Schneider et al, 2017].
+Despite the increasing use of immunotherapy in treating advanced malignancies, clinical outcomes remain heterogeneous, with many patients exhibiting intrinsic resistance or eventual disease recurrence following immune checkpoint inhibitor (ICI) therapy [Robert et al., 2015]. This highlights the critical need for predictive biomarkers to optimize treatment selection and personalize therapeutic strategies. Accumulating evidence indicates a strong correlation between gut microbial composition and responsiveness to cancer immunotherapy [Peng et al., 2020]. While advancements in targeted therapies and immunotherapy have improved survival outcomes [Switzer et al., 2022], ICIs targeting cytotoxic T-lymphocyte-associated antigen 4 (CTLA-4) and programmed cell death protein 1 (PD-1) demonstrate limited efficacy in approximately 50% of patients with metastatic disease [Larkin et al., 2015] and carry the risk of immune-related adverse events [Robert et al., 2019]. 
 <p>
 
-## Assembly and binning
+<p style="text-align: justify;">
+Consequently, elucidating the mechanistic relationship between the gut microbiome and antitumor immunity has become a priority in translational cancer research. Indeed, the gut microbiome is increasingly recognized as a critical modulator of anti-tumor immunity and, consequently, response to cancer immunotherapy. Initial investigations, utilizing both preclinical models [Sivan et al., 2015] and clinical cohorts, particularly those with melanoma [Routy et al., 2018], have demonstrated a compelling link between gut microbial composition and immunotherapy efficacy. This link has been further supported by fecal microbiota transplantation studies in both gnotobiotic mice [Gopalakrishnan et al., 2018] and human patients [Baruch et al., 2021].  While much of the early research focused on melanoma [Tsakmaklis et al., 2023], current efforts are shifting towards identifying conserved microbial biomarkers and mechanisms applicable across diverse cancers [Gunjur et al., 2024; Lin et al., 2025], predicated on the hypothesis that fundamental interactions between the gut microbiome and the immune system are broadly relevant to immunotherapy response.
+<p>
+
+<p style="text-align: justify;">
+Despite numerous published studies, the biological mechanisms by which gut microbes regulate the immune system in the context of melanoma immunotherapy remain incompletely understood. A recent meta-analysis identified robust stool metagenomic markers associated with successful melanoma immunotherapy [Olekhnovich et al., 2023]. Notably, no taxonomic predictors of negative response were identified. Expanding on our earlier investigations, we employed genome-resolved metagenomics to gain a deeper understanding of the gut microbiota’s role in modulating immunotherapy response in malignant tumors. This analysis revealed a link between systemic metabolic depletion in the gut microbiome and decreased efficacy of immunotherapy in patients with metastatic melanoma [Zakharevich et al., 2024].
+<p>
+
+<p style="text-align: justify;">
+We expanded our application of genome-resolved metagenomics, analyzing 624 stool metagenomes from 11 published studies encompassing over five cancer types and representing diverse geographical regions across three continents. This analysis identified robust markers capable of differentiating patients based on immunotherapy response. These markers were validated using statistical analysis and machine learning techniques focused on logarithmic ratios of identified features. Notably, the analysis revealed non-intestinal traits such as oral- and food-derived bacteria within the marker list predominantly associated with negative treatment outcomes, potentially reflecting the previously observed depletion of gut microbial load associated with oral microbiota enrichment [Liao et al., 2024].   These findings underscore the importance of considering the metabolic landscape of the gut microbiome – and the surprising influence of non-intestinal microbial sources – when predicting and optimizing immunotherapy response, paving the way for the development of novel therapeutic strategies targeting microbiome-immune interactions.
+<p>
+
+### References:
+1) [Robert, Caroline, et al. "Pembrolizumab versus ipilimumab in advanced melanoma." New England Journal of Medicine 372.26 (2015): 2521-2532.](https://www.nejm.org/doi/full/10.1056/NEJMoa1503093)
+2) [Peng, Zhi, et al. "The gut microbiome is associated with clinical response to anti–PD-1/PD-L1 immunotherapy in gastrointestinal cancer." Cancer Immunology Research 8.10 (2020): 1251-1261.](https://aacrjournals.org/cancerimmunolres/article/8/10/1251/466881/The-Gut-Microbiome-Is-Associated-with-Clinical)
+3) [Switzer B, Puzanov I, Skitzki JJ, Hamad L, Ernstoff MS. Managing Metastatic Melanoma in 2022: A Clinical Review. JCO Oncol Pract. 2022; 18(5):335-351. doi: 10.1200/OP.21.00686.](https://ascopubs.org/doi/10.1200/OP.21.00686?url_ver=Z39.88-2003&rfr_id=ori:rid:crossref.org&rfr_dat=cr_pub%20%200pubmed)
+4) [Larkin, James, et al. "Combined nivolumab and ipilimumab or monotherapy in untreated melanoma." New England journal of medicine 373.1 (2015): 23-34.](https://www.nejm.org/doi/full/10.1056/NEJMoa1504030)
+5) [Robert, Caroline, et al. "Pembrolizumab versus ipilimumab in advanced melanoma (KEYNOTE-006): post-hoc 5-year results from an open-label, multicentre, randomised, controlled, phase 3 study." The Lancet Oncology 20.9 (2019): 1239-1251.](https://pubmed.ncbi.nlm.nih.gov/31345627/)
+6) [Sivan, Ayelet, et al. "Commensal Bifidobacterium promotes antitumor immunity and facilitates anti–PD-L1 efficacy." Science 350.6264 (2015): 1084-1089.](https://www.science.org/doi/10.1126/science.aac4255)
+7) [Routy, Bertrand, et al. "Fecal microbiota transplantation plus anti-PD-1 immunotherapy in advanced melanoma: a phase I trial." Nature medicine (2023): 1-12.](https://www.nature.com/articles/s41591-023-02453-x)
+8) [Gopalakrishnan, Vancheswaran, et al. "Gut microbiome modulates response to anti–PD-1 immunotherapy in melanoma patients." Science 359.6371 (2018): 97-103.](https://www.science.org/doi/10.1126/science.aan4236)
+9) [Baruch, Erez N., et al. "Fecal microbiota transplant promotes response in immunotherapy-refractory melanoma patients." Science 371.6529 (2021): 602-609.](https://www.science.org/doi/10.1126/science.abb5920?url_ver=Z39.88-2003&rfr_id=ori:rid:crossref.org&rfr_dat=cr_pub%20%200pubmed)
+10) [Tsakmaklis, Anastasia, et al. "TIGIT+ NK cells in combination with specific gut microbiota features predict response to checkpoint inhibitor therapy in melanoma patients." BMC Cancer 23.1 (2023): 1160.]()
+11) [Gunjur, Ashray, et al. "A gut microbial signature for combination immune checkpoint blockade across cancer types." Nature medicine 30.3 (2024): 797-809.](https://www.nature.com/articles/s41591-024-02823-z)
+12) [Lin, Yufeng, et al. "Effects of gut microbiota on immune checkpoint inhibitors in multi-cancer and as microbial biomarkers for predicting therapeutic response." Med 6.3 (2025).](https://www.sciencedirect.com/science/article/pii/S2666634024004057?via%3Dihub)
+13) [Olekhnovich, Evgenii I., et al. "Consistent stool metagenomic biomarkers associated with the response to melanoma immunotherapy." mSystems 8.2 (2023): e01023-22.](https://journals.asm.org/doi/10.1128/msystems.01023-22)
+14) [Zakharevich, Natalia V., et al. "Systemic metabolic depletion of gut microbiome undermines responsiveness to melanoma immunotherapy." Life Science Alliance 7.5 (2024).](https://www.life-science-alliance.org/content/7/5/e202302480)
+15) [Liao, C., et al. "Oral bacteria relative abundance in faeces increases due to gut microbiota depletion and is linked with patient outcomes." Nat Microbiol. 2024; 9: 1555–1565.](https://www.nature.com/articles/s41564-024-01680-3)
+
+# Materials and methods
+### Data acquisition and preprocessing
+<p style="text-align: justify;">
+All 624 stool metagenomic samples from 11 published studies were downloaded from the NCBI/EBI databases using Kingfisher v0.4.1 [Woodcroft, 2022]. Data quality was assessed with FastQC v0.12.1 [Andrews et al., 2023], and raw reads were processed with fastp v0.23.4 to remove low-quality sequences [Chen et al., 2018]. Human-derived sequences were filtered out using HISAT2 v2.2 [Kim et al., 2019] with the GRCh37 human genome (Release 47) as a reference [Schneider et al, 2017].
+<p>
+
+### Assembly and binning
 <p style="text-align: justify;">
 Metagenomic assembly was performed using MEGAHIT v1.2.9 [Li et al., 2015], retaining contigs longer than 1000 bp. Filtered contigs were aligned to metagenomic reads using HISAT2 v2.2 [Kim et al., 2019]. Binning was conducted in two stages: (1) initial binning with MetaBAT2 v2.12.1 [Kang et al., 2019], MaxBin2 v2.2.7 [Wu et al., 2016], and Semibin2 v2.1.0 [Pan et al., 2023], followed by (2) refinement with DAS Tool v1.1.7 to improve bin quality [Sieber et al., 2018]. Bins were quality-checked with CheckM v1.2.3 [Parks et al., 2015] and dereplicated at 98% nucleotide identity using dRep v3.4.5 [Olm et al., 2017] to generate operational genomic units (OGUs).
 <p>
 
-## Taxonomic profiling and analysis
+### Taxonomic profiling and analysis
 <p style="text-align: justify;">
 Taxonomic annotation of bins was performed using GTDB-Tk v2.1.1 [Chaumeil et al., 2022] with the GTDB r207 database [Parks et al., 2022]. Additional data processing utilized Samtools v1.17 [Li et al., 2009], BEDTools v2.31.0 [Quinlan et al., 2010], and BBMap v39.06 [Bushnell et al., 2014]. Finally, OGU abundance profiles were generated by mapping reads to the OGU catalog using HISAT2 v2.2, followed processong with InStrain v1.9.0 [Olm et al., 2021]
 <p>
 
-## Marker OGU discovery
+### Marker OGU discovery
 <p style="text-align: justify;">
 The identification of OGUs associated with immunotherapy outcomes followed an established analytical framework from our previous works [Olekhnovich et al., 2023; Zakharevich et al., 2024]. Differential rankings was first performed using Songbird [Morton et al., 2019] to identify OGUs showing relative abundance variations between experimental groups, applying a conservative absolute differential value threshold of > 0.3. For candidate OGUs meeting this criterion, we subsequently calculated log-ratio abundances using Qurro [Fedarko et al., 2020] and determined statistical significance through Wilcoxon rank-sum tests implemented in the R statistical environment. The biomarker selection process incorporated stringent cross-validation criteria to ensure robust identification of microbial signatures. OGUs demonstrating consistent positive associations with therapeutic response across multiple datasets were retained as potential beneficial biomarkers, while any evidence of negative association with treatment outcome in any dataset resulted in automatic exclusion regardless of other positive associations.This approach enabled simultaneous identification of two clinically meaningful biomarker categories: microbial taxa positively correlated with successful immunotherapy outcomes and those associated with adverse therapeutic responses. The methodology emphasizes reproducibility through multi-dataset validation and maintains rigorous standards for biomarker qualification by requiring consistent directional effects across independent cohorts.
 <p>
 
-## Markers testing
+### Markers testing
 <p style="text-align: justify;">
-Determined R/NR biomarkers were used to calculate log ratios, followed by statistical assessment using the lmer function from the lmerTest package [Kuznetsova et al., 2017] in the R statistical environment. Post-hoc testing was performed using Tukey's method with the multcomp package [Bretz et al., 2011], applying Bonferroni correction for multiple comparisons. Model residuals were tested for normality using the Shapiro-Wilk test (shapiro.test function in R). Additional testing of marker OGU included investigating the ability of calculated log ratios to separate experimental groups using logistic regression using the method of leave-one group out cross validation. Gene-set enrichment analysis (GSEA) implemented in GSEA function from clusterProfiler package [Xu et al., 2024] using to investigate statistical relationships of OGU marker sets across taxonomy and other attributes included food, body site or pathogens.GSEA analysis results were visualized using gseavis package [Zhang et al., 2025].
+Determined R/NR biomarkers were used to calculate log ratios, followed by statistical assessment using the lmer function from the lmerTest package [Kuznetsova et al., 2017] in the R statistical environment. Post-hoc testing was performed using Tukey's method with the multcomp package [Bretz et al., 2011], applying Bonferroni correction for multiple comparisons. Model residuals were tested for normality using the Shapiro-Wilk test (shapiro.test function in R). Additional testing of marker OGU included investigating the ability of calculated log ratios to separate experimental groups using logistic regression using the method of leave-one group out cross validation. Gene-set enrichment analysis (GSEA) implemented in GSEA function from clusterProfiler package [Xu et al., 2024] using to investigate statistical relationships of OGU marker sets across taxonomy and other attributes included food, body site or pathogens.GSEA analysis results were visualized using GseaVis package [Zhang et al., 2025].
 <p>
 
-## Functional profiling of marker OGU
+### Marker clustering with non-gut databases
+<p style="text-align: justify;">
+The presence of non-gut microbes in the stool microbiome, such as those frequently detected on the oral means, has been associated with a degradation of the gut microbiota [Liao et al., 2024]. This phenomenon frequently results in adverse outcomes, including various illnesses. The identification of non-gut microbes was conducted using published microbial MAGs from body sites (oral, skin, vagina) [Pasolli et al., 2019] and food [Carlino et al., 2024]. The body site MAGs were retrieved from [here](http://segatalab.cibio.unitn.it/data/Pasolli_et_al.html). A total of 9,412 genomes were selected based on specific criteria, including those from the "Body Site" category, such as the airways, nasal cavity, oral cavity, skin, and vagina. Genomes classified as "Age Category" as either "newborn" or "child" were excluded from the analysis. The selected genomes were then clustered with our reconstructed catalog via dRep [Olm et al., 2017] with 95% nucleotide identity. The genome that exhibited a high degree of similarity with body MAG marks from the same source. Consequently, 293 MAGs were designated as body microbes. The food MAGs were retrieved from [here](https://zenodo.org/records/13285428), and the archive cFMD_mags.tar.gz contains the folder cFMD_mags_prok, which contains prokaryotic genomes. These 10,112 metagenome-assembled genomes (MAGs) were subsequently clustered via dRep with 95% nucleotide identity, yielding a total of 983 genomes. The subsequent source identification process was consistent with that employed for body MAGs. Of these, 91 were classified as food microbes.
+<p>
+
+### Functional profiling of marker OGU
 <p style="text-align: justify;">
 Functional profiles of OGUs were generated using MetaCerberus [Figueroa et al., 2024] with annotations from the Carbohydrate-Active EnZymes (CAZy) database [Drula et al., 2022] and the Kyoto Encyclopedia of Genes and Genomes (KEGG) [Kanehisa et al., 2025]. Statistical associations between functional features and experimental groups were assessed using logistic regression. Gene set enrichment analysis (GSEA) was applied to evaluate links between gene sets and immunotherapy response, with results visualized using the ggseavis package.
 <p>
 
-## Additional analysis and visualization
+### Additional analysis and visualization
 <p style="text-align: justify;">
 For visualization and statistical analysis, we utilized the following R packages: ggplot2 [Wickham et al., 2016] for graphics creation, ggpubr [Kassambara, 2023] for publication-ready plots, hrbrthemes [Rudis, 2020] for enhanced themes, and RColorBrewer [Neuwirth, 2022] for color palette management. String data manipulation was performed using the stringr package [Wickham, 2022]. The data analysis report was generated with Quarto [Allaire et al., 2022], incorporating dynamic tables via DT [Xie et al., 2023] and enhanced download functionality using downloadthis [Sidi, 2023].
 <p>
 
-## Data availability
+### Data availability
 <p style="text-align: justify;">
 In this study, we used open access data from the NCBI/EBI Sequence Read Archives, identified by the following BioProjects accession numbers: [PRJNA397906](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA397906), [PRJEB22893](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJEB22893), [PRJNA399742](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA399742), [PRJNA770295](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA770295), [PRJEB43119](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJEB43119), [PRJNA762360](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA762360), [PRJNA1011235](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA1011235), [PRJNA615114](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA615114), [PRJNA866654](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA866654), [PRJNA494824](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA494824), [PRJEB49516](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJEB49516).
 MAGs catalog assembly pipeline were description in <https://github.com/JeniaOle13/Cancer_MAGs>.
@@ -48,7 +87,7 @@ Songbird Qurro files for QIIME2 viewer were available at [Zenodo](https://zenodo
 Source code and Quarto report available at <https://github.com/JeniaOle13/cancer-biomarkers>.
 <p>
 
-## References
+### References
 1)  [Chen, Shifu, et al. "fastp: an ultra-fast all-in-one FASTQ preprocessor." Bioinformatics 34.17 (2018): i884-i890.](https://academic.oup.com/bioinformatics/article/34/17/i884/5093234)
 2)  [Li, Dinghua, et al. "MEGAHIT: an ultra-fast single-node solution for large and complex metagenomics assembly via succinct de Bruijn graph." Bioinformatics 31.10 (2015): 1674-1676.](https://academic.oup.com/bioinformatics/article/31/10/1674/177884?login=true)
 3)  [Kim, Daehwan, et al. "Graph-based genome alignment and genotyping with HISAT2 and HISAT-genotype." Nature biotechnology 37.8 (2019): 907-915.](https://www.nature.com/articles/s41587-019-0201-4)
@@ -87,6 +126,8 @@ Source code and Quarto report available at <https://github.com/JeniaOle13/cancer
 36) [Woodcroft, Ben J. Kingfisher: Rapid SRA Download Tool. Version 0.4.1, 2022](https://github.com/wwood/kingfisher-download)
 37) [Andrews S. FastQC: A quality control tool for high throughput sequence data. Version 0.12.1, 2023.](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
 38) [Schneider VA, et al. Evaluation of GRCh38 and de novo haploid genome assemblies demonstrates the enduring quality of the reference assembly. Genome Research 2017;27(5):849-864.](doi:10.1101/gr.213611.116)
+39) [Pasolli, Edoardo, et al. "Extensive unexplored human microbiome diversity revealed by over 150,000 genomes from metagenomes spanning age, geography, and lifestyle." Cell 176.3 (2019): 649-662.](https://www.sciencedirect.com/science/article/pii/S0092867419300017)
+40) [Carlino, Niccolò, et al. "Unexplored microbial diversity from 2,500 food metagenomes and links with the human microbiome." Cell 187.20 (2024): 5775-5795.](https://pubmed.ncbi.nlm.nih.gov/39214080/)
 
 ```{r}
 #| include: false
@@ -270,14 +311,9 @@ KEGG_sets <- read.csv("data/KEGG-sets.tsv", sep = "\t")
 ```
 
 # Results
-## Data overview
+### Data overview
 <p style="text-align: justify;">
-The analysis incorporated 627 gut metagenomic profiling samples obtained from 11 independent external datasets.
-Patients were stratified by immunotherapy response into two groups: responders (R group, n = 365; 58.2%) and non-responders (NR group, n = 262; 41.8%).
-Response assessment followed RECIST 1.1 criteria, with the R group including patients showing complete response (CR), partial response (PR), or stable disease (SD) at 6-month follow-up, while the NR group comprised exclusively progressive disease (PD) cases.
-The study cohort received various immunotherapy regimens, including anti-PD1, anti-CTLA4, or combination therapies.
-Cancer type distribution revealed melanoma predominance (n = 456; 72.7%), followed by gastrointestinal (GI) cancers (n = 82; 13.1%), non-small cell lung cancer (n = 15; 2.4%), breast cancer (n = 4; 0.6%), ovarian cancer (n = 2; 0.3%), and other malignancies (n = 68; 10.8%).
-All samples were collected prior to treatment initiation to evaluate baseline microbiota status.
+The analysis incorporated 627 gut metagenomic profiling samples obtained from 11 independent external datasets. Patients were stratified by immunotherapy response into two groups: responders (R group, n = 365; 58.2%) and non-responders (NR group, n = 262; 41.8%). Response assessment followed RECIST 1.1 criteria, with the R group including patients showing complete response (CR), partial response (PR), or stable disease (SD) at 6-month follow-up, while the NR group comprised exclusively progressive disease (PD) cases. The study cohort received various immunotherapy regimens, including anti-PD1, anti-CTLA4, or combination therapies. Cancer type distribution revealed melanoma predominance (n = 456; 72.7%), followed by gastrointestinal (GI) cancers (n = 82; 13.1%), non-small cell lung cancer (n = 15; 2.4%), breast cancer (n = 4; 0.6%), ovarian cancer (n = 2; 0.3%), and other malignancies (n = 68; 10.8%). All samples were collected prior to treatment initiation to evaluate baseline microbiota status.
 <p>
 
 ```{r}
@@ -330,10 +366,9 @@ datatable(meta_data,
                          buttons = c('csv', 'excel')))
 ```
 
-## Quality control
+### Quality control
 <p style="text-align: justify;">
-Following quality filtering with fastp, aggregated quality metrics were compiled using MultiQC to summarize the FastQC reports (MultiQC are attached to the report below).
-Before filtering, approximately \~15bn reads (mean ± SD: 24 ± 15 mln reads per sample) were retained for downstream analysis, with an average of 34 ± 18% of reads per sample removed during quality control (see Table 2 for detailed filtering statistics).
+Following quality filtering with fastp, aggregated quality metrics were compiled using MultiQC to summarize the FastQC reports (MultiQC are attached to the report below). Before filtering, approximately \~15bn reads (mean ± SD: 24 ± 15 mln reads per sample) were retained for downstream analysis, with an average of 34 ± 18% of reads per sample removed during quality control (see Table 2 for detailed filtering statistics).
 <p>
 
 [MultiQC report](data/multiqc_report.html)
@@ -350,11 +385,10 @@ datatable(statistic,
                          buttons = c('csv', 'excel')))
 ```
 
-## Taxonomic composition
+### Taxonomic composition
 <p style="text-align: justify;">
 A total of 3649 OGUs belonging to 12 bacterial phyla were detected in 627 samples.
-The most numerous of these were Firmicutes (n = 2443), Actinobacteriota (n = 590), Bacteroidota (n = 394), Proteobacteria (n = 140), Desulfobacterota (n = 27) and others (n = 55).
-OGU abundance profiles of stool samples presented in Table 3.
+The most numerous of these were Firmicutes (n = 2443), Actinobacteriota (n = 590), Bacteroidota (n = 394), Proteobacteria (n = 140), Desulfobacterota (n = 27) and others (n = 55). OGU abundance profiles of stool samples presented in Table 3.
 <p>
 
 ```{r}
@@ -369,15 +403,13 @@ datatable(ogu_table_t,
                          buttons = c('csv', 'excel')))
 ```
 
-## Marker OGUs discovery
+### Marker OGUs discovery
 <p style="text-align: justify;">
-The analysis of marker OGUs using Songbird and Qurro identified 793 significant features, with 326 enriched in responders (R) and 467 enriched in non-responders (NR).
-Among R markers, the most prominent species included *Blautia wexlerae* (n = 49), *Faecalibacterium prausnitzii* (n = 27), *Fusicatenibacter saccharivorans* (n = 15), *Gemmiger qucibialis* (n = 14), and *Blautia faecis* (n = 8).
-In contrast, non-responders exhibited enrichment of different microbial taxa, including *F. prausnitzii* (n = 17), *Dysosmobacter* sp001916835 (n = 12), *Dialister invisus* (n = 11), *Veillonella parvula* (n = 9), and ER4 sp000765235 (n = 7).
-Notably, while *F. prausnitzii* was detected in both groups, its higher abundance in responders (27 vs. 17 OGEs) implies that strain-level differences or functional variations could influence clinical outcomes.
-The strong association of *Blautia* species, particularly *B. wexlerae*, with responders highlights its potential as a biomarker for positive treatment response.
-It is also important to note the association of oral bacteria *V. parvula* and *D. invisus* with negative outcomes of immunotherapy.
-Marker OGEs description as detailed in Table 4.
+Analysis of marker OGUs using Songbird and Qurro identified 793 significantly differentiated features between R and NR experimental groups. Of these, 326 were enriched in R, while 467 were enriched in NR.  The most prominent microbial species enriched in responders included *Blautia wexlerae* (n = 49), *Faecalibacterium prausnitzii* (n = 27), *Fusicatenibacter saccharivorans* (n = 15), *Gemmiger qucibialis* (n = 14), and *Blautia faecis* (n = 8). Conversely, NR exhibited enrichment of distinct microbial taxa, including *F. prausnitzii* (n = 17), *Veillonella parvula* (n = 7), and *Dialister invisus* (n = 7).  Although *F. prausnitzii* was detected in both groups, its significantly higher abundance in responders (27 vs. 17 OGUs) suggests potential strain-level or functional variations contributing to treatment outcome.  The robust association of *Blautia* species, particularly *B. wexlerae*, with positive response highlights its potential as a predictive biomarker.  Notably, the enrichment of oral bacteria *V. parvula* and *D. invisus* in NR suggests a potential link between oral microbiome composition and immunotherapy efficacy. Detailed descriptions of marker OGUs are provided in Table 4. Songbird coefficients for each OGU marker are presented in Figure 2.
+<p>
+
+<p style="text-align: justify;">
+Statistical analysis utilizing linear mixed-effects models, accounting for dataset variables, revealed significant differences between R and NR groups (p < 0.0001).  The inclusion of the dataset variable as a fixed effect was statistically significant (p < 0.0001), justifying the employed modeling approach.  Residuals were normally distributed (Shapiro-Wilk test, p < 0.0001), and the observed effect size was large (Cohen's d = 0.91).  Log ratio values from the metagenomic samples are detailed in Table 5, with their distribution visualized across experimental groups in Figure 3.  A predictive classifier, based on log ratios and logistic regression with Synthetic Minority Oversampling Technique (SMOTE) balancing, demonstrated a receiver operating characteristic (ROC) area under the curve (AUC) of 0.72 ± 0.12 (Figure 4), with other performance metrics detailed in Table 6 and Figure 5.
 <p>
 
 ```{r}
@@ -471,12 +503,12 @@ datatable(df.log_ratio,
 #| warning: false
 #| include: false
 logratio_plot <- ggplot(df.log_ratio, aes(log_ratio, response, col = response))+
-    stat_halfeye()+
-    xlab("Response")+
-    ylab("Log ratio")+
-    theme_pubr()+
-    theme(legend.position = "none")+
-    scale_color_brewer(palette = "Set1")
+      stat_halfeye()+
+      xlab("Log ratio")+
+      ylab("Response")+
+      theme_pubr()+
+      theme(legend.position = "none")+
+      scale_color_brewer(palette = "Set1")
 ```
 
 ```{r fig.width=4, fig.height=3}
@@ -664,11 +696,20 @@ download_this(
 metrics_plot
 ```
 
-## Marker OGUs features
+### Marker OGUs features
+<p style="text-align: justify;">
+Gene set enrichment analysis revealed enrichment patterns based on taxonomic features (phylum, genus) and microbial origins – specifically, body sites excluding the intestine (mouth, skin, vagina) and the environment (food). OGU identified with 98% nucleotide identity were grouped by taxonomy or other characteristics to facilitate the study of enrichment within specific groups. According to obtained results, Bacteroidetes phylum was upregulated in R group as well as Proteobacteria in NR group (GSEA adj.p < 0.01). Стоит отметить, что list of core enrichment OGU of Proteobacteria included potential opportunistic species such as *Klebsiella quasipneumoniae*, *Klebsiella michiganensis*, *Enterobacter ludwigii*, *Enterobacter kobei*, *Citrobacter youngae*, *Citrobacter portucalensis*, *Citrobacter freundii*, *Haemophilus sp001815355*. At the genus level, *Blautia*, *Bacteroides*, *Fusicatenibacter*, *Gemmiger*, and *Faecalibacterium* were enriched in R group as well as *Veillonella*, *Prevotella*, *Dysosmobacter*, *Acetatifactor* were enriched in NR group (GSEA adj.p < 0.01).
+<p>
+
+<p style="text-align: justify;">
+Clustering 3,816 OGUs from this study with 9,412 MAGs derived from different body sites and 10,112 food-derived MAGs revealed that 91 OGUs exhibited complementarity to food-derived microbes, and 293 were complementary to those from non-intestinal sources, at 95% nucleotide similarity, which corresponds to the species level. Based on the data, NR-linked OGUs were enriched in oral and food-derived microbial communities. Core food-derived OGUs comprised *Bifidobacterium animalis*, *C. freundii*, *E. kobei*, *Enterococcus faecalis*, *Enterococcus faecium*, *Escherichia coli*, *K. michiganensis*, *K. quasipneumoniae*, *Lactobacillus gasseri*, *Limosilactobacillus reuteri*, and *Megasphaera elsdenii*, showing substantial overlap with core enrichment patterns observed in Proteobacteria. Core enrichment patterns within the oral cavity included OGU representatives of Veillonellales and Enterobacterales, specifically *Anaeroglobus micronuciformis*, *Escherichia coli*, *Veillonella parvula*, and *Haemophilus* sp001815355.
+<p>
+
 ```{r}
 #| message: false
 #| warning: false
 #| include: false
+
 vec <- ogu.markers$mean
 names(vec) <- ogu.markers$featureid
 vec <- sort(vec, decreasing = T)
@@ -830,6 +871,21 @@ gsea_bodysite_plot <- gseaNb(object = fgsea_bodysite,
 #| echo: false
 #| message: false
 #| warning: false
+
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
 datatable(fgsea_food_df[1:8], 
           caption = "Table 11. GSEA results: food.",
           style = "bootstrap5", 
@@ -912,9 +968,8 @@ download_this(
 gsea_bodysite_plot
 ```
 
-## Functional analysis
-#### GSEA
-###### CAZy
+### Functional analysis
+#### GSEA: CAZy
 ```{r}
 #| include: false
 
@@ -1072,7 +1127,7 @@ download_this(
 cazy_barplot
 ```
 
-###### KEGG
+#### GSEA: KEGG
 ```{r}
 #| include: false
 kegg.genes <- data.frame()  # Лучше инициализировать как пустой data.frame
@@ -1155,7 +1210,7 @@ gsea_kegg_plot <- gseaNb(fgsea_kegg,
 #| echo: false
 #| message: false
 #| warning: false
-datatable(fgsea_kegg_df[1:8], 
+datatable(fgsea_kegg_df[c(1,11,2:8)], 
           caption = "Table 15. GSEA results: KEGG.",
           style = "bootstrap5", 
           extensions = 'Buttons', 
@@ -1353,4 +1408,23 @@ kegg_barplot <- ggarrange(
       ko02040_barplot, 
       ncol = 2, nrow = 5
 )
+```
+
+```{r fig.height=7.5, fig.width=5}
+#| message: false
+#| warning: false
+#| include: false
+download_this(
+  kegg_barplot,
+  output_name = "kegg_barplot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=12.5, fig.height=18.5}
+#| echo: false
+#| fig-cap: Figure 12. GSEA results CAZy.
+kegg_barplot
 ```
