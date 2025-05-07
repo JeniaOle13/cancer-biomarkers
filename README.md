@@ -32,5 +32,5 @@ In this study, we used open access data from the NCBI/EBI Sequence Read Archives
 ## Findings
 Financial support for this study was provided by the Russian Science Foundation under the grant #22-75-10029 (https://rscf.ru/project/22-75-10029/).
 
-## 📄 License
+## License
 This project is licensed under the MIT License.
