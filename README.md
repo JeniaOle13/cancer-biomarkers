@@ -27,6 +27,7 @@ In this study, we used open access data from the NCBI/EBI Sequence Read Archives
 
 ## Authors:
 [Vera Kanaeva](https://scholar.google.ru/citations?hl=ru&user=Ie7RMLAAAAAJ) (Lopukhin FRCC PCM, MIPT).
+
 [Evgenii Olekhnovich](https://scholar.google.ru/citations?user=RA9ItlsAAAAJ&hl=ru) (Lopukhin FRCC PCM).
 
 ## Findings
