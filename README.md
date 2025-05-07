@@ -5,7 +5,10 @@
 *Global distribution of collected samples (n=624) across countries. Circle size represents sample count per region, while color indicates the proportion of patients R - responsive (or NR - non-responsive) to immunotherapy*
 
 
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
+🔗 **Access the full study report:** [https://jeniaole13.github.io/cancer-biomarkers/](https://jeniaole13.github.io/cancer-biomarkers/)
 
 ## Overview  
 This repository contains the computational workflows and scripts used to analyze 624 stool metagenomes from 11 cohorts to identify microbial biomarkers of cancer immunotherapy response. Key findings include:  
