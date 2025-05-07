@@ -1,6 +1,8 @@
 # Cancer-Immunotherapy-Microbiome-Analysis  
 **Code repository for the manuscript:** *"Non-Intestinal Microbial Signatures in Stool as Predictors of Cancer Immunotherapy Outcome"*
 
+![](https://github.com/JeniaOle13/cancer-biomarkers/blob/main/data/sample_map.jpg)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## 📖 Overview  
