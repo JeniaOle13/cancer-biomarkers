@@ -226,7 +226,7 @@ sample_map <- ggplot(data = loc) +
         panel.border = element_rect(fill = NA))
 ```
 
-[Figure 1](sample_map.pdf)
+[Figure 1](data/sample_map.pdf)
 ```{r fig.width=15, fig.height=6}
 #| echo: false
 #| message: false
