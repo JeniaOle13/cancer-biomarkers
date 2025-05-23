@@ -4,8 +4,6 @@
 ![](https://github.com/JeniaOle13/cancer-biomarkers/blob/main/data/sample_map.jpg)
 *Global distribution of collected samples (n=624) across countries. Circle size represents sample count per region, while color indicates the proportion of patients R - responsive (or NR - non-responsive) to immunotherapy*
 
-
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 🔗 **Access the full study report:** [https://jeniaole13.github.io/cancer-biomarkers/](https://jeniaole13.github.io/cancer-biomarkers/)
