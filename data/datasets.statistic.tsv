@@ -1,0 +1,15 @@
+dataset	immunotherapy_type	cancer_type	n_samples	platform	sequence_length	n_reads
+Frankel et al., 2017	anti-PD-1/ anti-CTLA4	Melanoma	39	Illumina HiSeq 2000	100	1688904099
+Gopalakrishnan et al., 2018	anti-PD-1	Melanoma	25	Illumina HiSeq 2000	100	398245066
+Matson et al., 2018	anti-PD-1	Melanoma	38	Illumina NextSeq 500	150	1522421744
+Baruch et al., 2021	anti-PD-1	Melanoma	42	Illumina HiSeq X Ten	150	737390881
+Davar et al., 2021	anti-PD-1	Melanoma	214	Illumina NovaSeq 6000		2422776370
+Spencer et al., 2021	anti-PD-1	Melanoma	156	Illumina HiSeq 2000/X	100-150	2028356126
+Lee et al., 2022	anti-PD-1/ anti-CTLA4	Melanoma	164	Illumina NovaSeq 6000	150	4219730439
+McCulloch et al., 2022	anti-PD-1	Melanoma	27	Illumina NovaSeq 6000	150	922889774
+Tsakmaklis et al., 2023	anti-PD-1/ anti-CTLA4	Melanoma	29	Illumina NovaSeq 6000	150	794124064
+Routy et al., 2023	anti-PD-1	Melanoma	71	Illumina NovaSeq 6000	150	1565577436
+Peng et al., 2020	anti-PD-1	Cancer of part of the gastrointestinal tract (GIT)	40	Illumina NovaSeq 6000	150	1015338636
+Liu et al., 2022	anti-PD-1	Non-small cell lung cancer (NSCLC)	14	Illumina HiSeq 4000	150	409403683
+Heshiki et al., 2020	anti-PD-1	NSCLC, cancer of part of the GIT, breast cancer, ovarian cancer	11	Illumina HiSeq 1500	100	391957976
+Gunjur et al., 2024	anti-PD-1/ anti-CTLA4	Cancer of part of the GIT, other rare cancers	106	Illumina NovaSeq 6000	150	2227048564

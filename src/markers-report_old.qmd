@@ -1,0 +1,1465 @@
+---
+format: html
+editor: source
+---
+
+```{r}
+#| include: false
+library(ggplot2)
+library(ggpubr)
+library(ggrepel)
+library(ggdist)
+library(scatterpie)
+library(stringr)
+library(RColorBrewer)
+library(lmerTest)
+library(multcomp)
+library(fgsea)
+library(hrbrthemes)
+library(dplyr)
+library(readr)
+library(ggdist)
+library(effectsize)
+library(reshape2)
+library(clusterProfiler)
+library(GseaVis)
+library(qqtest)
+
+library(tidyverse)
+library(tidymodels)
+library(themis)
+library(pROC)
+library(recipeselectors)
+
+library(DT)
+library(downloadthis)
+```
+
+```{r}
+#| include: false
+#| 
+meta_data <- read.csv("data/meta_data.tsv", sep = "\t")
+```
+
+```{r}
+#| include: false
+
+ogu_table <- read.csv("data/ogu_table.tsv", sep = "\t")
+```
+
+```{r}
+#| include: false
+
+taxonomy <- read.csv("data/taxonomy.tsv", sep = "\t", row.names = 1)
+
+kingdom <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[1])
+phylum <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[2])
+class_t <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[3])
+order_t <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[4])
+family_t <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[5])
+
+genus <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[6])
+genus[genus == "g__"] <- paste0(family_t[which(genus == "g__")], "_unknown")
+
+species <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[7])
+
+kingdom <- sub("d__", "", kingdom)
+phylum <- sub("p__", "", phylum)
+class_t <- sub("c__", "", class_t)
+order_t <- sub("o__", "", order_t)
+family_t <- sub("f__", "", family_t)
+genus <- sub("g__", "", genus)
+species <- sub("s__", "", species)
+
+species <- gsub(paste(paste0("_", LETTERS), collapse = "|"), "", species)
+genus <- gsub(paste(paste0("_", LETTERS), collapse = "|"), "", genus)
+
+tax_table <- data.frame(kingdom, phylum, class = class_t, order = order_t, family = family_t, genus, species)
+rownames(tax_table) <- rownames(taxonomy)
+
+tax_table$phylum <- sapply(str_split(tax_table$phylum, "_"), function(x) x[1])
+tax_table <- tax_table[rownames(tax_table) %in% colnames(ogu_table),]
+```
+
+```{r}
+#| include: false
+
+statistic <- read.csv("data/statistic.tsv", sep = "\t")
+```
+
+```{r}
+#| include: false
+
+ogu_table_t <- as.data.frame(t(ogu_table))
+ogu_table_t <- cbind(featureid = rownames(ogu_table_t), ogu_table_t)
+ogu_table_t <- merge(cbind(featureid = rownames(tax_table), tax_table), ogu_table_t, by = 1)
+ogu_table_t <- ogu_table_t[-1]
+```
+
+```{r}
+#| include: false
+
+ogu.markers <- read.csv("data/ogu.biomarkers.tsv", sep = "\t")
+ogu.markers <- merge(ogu.markers[c(2,1,3:6)], cbind(rownames(tax_table), tax_table), by = 1)
+```
+
+```{r}
+#| include: false
+
+songbird_Frankel_2017 <- read.csv("data/songbird/Frankel_2017/differentials.tsv", sep = "\t")
+songbird_Gopalakrishnan_2019 <- read.csv("data/songbird/Gopalakrishnan_2019/differentials.tsv", sep = "\t")
+songbird_Matson_2019 <- read.csv("data/songbird/Matson_2019/differentials.tsv", sep = "\t")
+
+songbird_Spencer_2021 <- read.csv("data/songbird/Spencer_2021/differentials.tsv", sep = "\t")
+songbird_Lee_2022 <- read.csv("data/songbird/Lee_2022/differentials.tsv", sep = "\t")
+
+songbird_Liu_2022 <- read.csv("data/songbird/Liu_2022/differentials.tsv", sep = "\t")
+songbird_McCulloch_2022 <- read.csv("data/songbird/McCulloch_2022/differentials.tsv", sep = "\t")
+songbird_Peng_2020 <- read.csv("data/songbird/Peng_2020/differentials.tsv", sep = "\t")
+songbird_Tsakmaklis_2023 <- read.csv("data/songbird/Tsakmaklis_2023/differentials.tsv", sep = "\t")
+songbird_Gunjur_2024 <- read.csv("data/songbird/Gunjur_2024/differentials.tsv", sep = "\t")
+songbird_Heshiki_2020 <- read.csv("data/songbird/Heshiki_2020/differentials.tsv", sep = "\t")
+```
+
+```{r}
+#| include: false
+songbird_coef <- rbind(songbird_Frankel_2017, songbird_Gopalakrishnan_2019, songbird_Matson_2019,
+      songbird_Spencer_2021, songbird_Lee_2022, songbird_Liu_2022, songbird_McCulloch_2022,
+      songbird_Peng_2020, songbird_Tsakmaklis_2023, songbird_Gunjur_2024, songbird_Heshiki_2020)
+
+songbird_coef <- songbird_coef %>% group_by(featureid) %>% summarise(mean = mean(response.T.R.), sd = sd(response.T.R.))
+songbird_coef <- as.data.frame(songbird_coef)
+
+ogu.markers <- merge(ogu.markers, songbird_coef, by = 1)
+ogu.markers <- ogu.markers[order(ogu.markers$num_datasets, decreasing = T),]
+rownames(ogu.markers) <- 1:nrow(ogu.markers)
+```
+
+```{r}
+#| include: false
+body_site <- read.csv("data/body_ogu.tsv", sep = "\t")[-2]
+colnames(body_site)[2] <- "site"
+body_site$genome <- sub(".fa", "", body_site$genome)
+
+food <- read.csv("data/food_ogu.txt", sep = "\t", header = F)
+colnames(food) <- "genome"
+food$site <- "food"
+food$genome <- sub(".fa", "", food$genome)
+```
+
+```{r}
+#| include: false
+#| warning: false
+loc <- read_tsv('data/sum_location.tsv')
+
+loc <- loc %>% 
+  mutate(`sample number` = R + NR) %>% 
+  mutate(nud_lat = case_when(              # nudging latitude to avoid overlaps
+    dataset == 'Spencer_2021' ~ lat + 30,
+    dataset == 'Matson_2019' ~ lat + 15,
+    #dataset == 'Frankel_2017' ~ lat - 10,
+    dataset == 'Gopalakrishnan_2018' ~ lat - 15,
+    lat_lon == '51.49766788 N -0.119759159 W' ~ lat - 15,
+    lat_lon == '53.80605739 N -1.522751916 W' ~ lat + 15,
+    lat_lon == '53.22142806 N 6.574345097 E' ~ lat + 10,
+    .default = lat)) %>% 
+  mutate(nud_lon = case_when(              # nudging longititude to avoid overlaps
+    dataset == 'Spencer_2021' ~ lon - 30,
+    dataset == 'Matson_2019' ~ lon + 5,
+    #dataset == 'Frankel_2017' ~ lon - 15,
+    dataset == 'Gopalakrishnan_2018' ~ lon + 5,
+    lat_lon == '51.49766788 N -0.119759159 W' ~ lon - 25,
+    lat_lon == '53.42969912 N -2.228100629 W' ~ lon - 15,
+    lat_lon == '53.80605739 N -1.522751916 W' ~ lon + 5,
+    lat_lon == '53.22142806 N 6.574345097 E' ~ lon + 20,
+    .default = lon))
+```
+
+```{r}
+#| include: false
+#| warning: false
+CAZy <- read.csv("data/CAZy.tsv", sep = "\t")
+KEGG <- read.csv("data/KEGG.tsv", sep = "\t")
+
+CAZy_sets <- read.csv("data/CAZy-sets.tsv", sep = "\t")
+KEGG_sets <- read.csv("data/KEGG-sets.tsv", sep = "\t")
+
+table(meta_data$response)
+```
+
+# Data overview
+<p style="text-align: justify;">
+The analysis incorporated 624 stool metagenomes obtained from 11 independent external datasets (see Table 1). Patients were stratified by immunotherapy response into two groups: responders (R group, n = 362; 58.2%) and non-responders (NR group, n = 262; 41.8%). Response assessment followed RECIST 1.1 criteria, with the R group including patients showing complete response (CR), partial response (PR), or stable disease (SD) at 6-month follow-up, while the NR group comprised exclusively progressive disease (PD) cases. The study cohort received various immunotherapy regimens, including anti-PD1, anti-CTLA4, or combination therapies. Cancer type distribution revealed melanoma predominance (n = 456; 72.7%) [Frankel et al. 2017; Gopalakrishnan et al. 2018; Matson et al. 2018; Spencer et al. 2021; Lee et al. 2022; McCulloch et al. 2022; Tsakmaklis et al. 2023], followed by gastrointestinal (GI) cancers (n = 82; 13.1%) [Peng et al. 2020; Heshiki et al. 2020; Gunjur et al. 2024], non-small cell lung cancer (n = 15; 2.4%) [Liu et al. 2022; Heshiki et al. 2020], breast cancer (n = 4; 0.6%) [Heshiki et al. 2020], ovarian cancer (n = 2; 0.3%) [Heshiki et al. 2020], and other malignancies (n = 68; 10.8%) [Gunjur et al. 2024]. The datasets are plotted on a world map as shown in Figure 1.
+<p>
+
+<p style="text-align: justify;">
+All samples were collected prior to treatment initiation to evaluate baseline microbiota status. Following quality filtering with fastp, aggregated quality metrics were compiled using MultiQC to summarize the FastQC reports (MultiQC are attached to the report below). Before filtering, approximately ~15 bn reads (MEAN ± SD: 24 ± 15 mln reads per sample) were retained for downstream analysis, with an average of 34 ± 18% of reads per sample removed during quality control (see Table 2 for detailed filtering statistics). A total of 3649 OGUs belonging to 12 bacterial phyla were detected in 624 stool metagenomes. The most numerous of these were Firmicutes (n = 2443), Actinobacteriota (n = 590), Bacteroidota (n = 394), Proteobacteria (n = 140), Desulfobacterota (n = 27) and others (n = 55). OGU abundance profiles of stool samples presented in Table 3.
+<p>
+
+```{r}
+#| label: dvsdfv
+#| include: false
+sample_map <- ggplot(data = loc) +
+    borders("world", colour = "gray58", fill = "gray") +
+    # coord_cartesian(xlim = c(-180, 180), ylim = c(-55, 85)) +
+    geom_point(aes(x = nud_lon, y = nud_lat, size = `sample number`), shape = 1) +
+    scale_radius(range = c(7, 18)) +
+  geom_scatterpie(
+      aes(x = nud_lon, y = nud_lat, group = dataset, r = sqrt(`sample number`)),
+      cols = c("R", "NR"),
+      color = 'black') +
+  scale_fill_manual(values = c("R" = "#377EB8", "NR" = "#E41A1C")) +
+  geom_segment(aes(x = nud_lon, y = nud_lat, xend = lon, yend = lat), 
+               color = 'gray25', linewidth = 0.7) +
+  geom_label_repel(aes(x = nud_lon, y = nud_lat, label = dataset),
+    size = 4, direction = "both", segment.color = 'black',
+    force = 4, min.segment.length = 0.5, nudge_x = -2) +
+  labs(x = "Longitude", y = "Latitude") +
+  theme_bw()+
+    theme(
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) + 
+    theme(
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(fill = NA))
+```
+
+[Figure 1](data/sample_map.pdf)
+```{r fig.width=15, fig.height=6}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-cap: Figure 1. Global distribution of collected samples (n=624) across countries. Circle size represents sample count per region, while color indicates the proportion of patients R - responsive (or NR - non-responsive) to immunotherapy.
+sample_map
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(meta_data, 
+          caption = "Table 1. Sample metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+[MultiQC report](data/multiqc_report.html)
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+colnames(statistic) <- c("sampleid", "dataset", "raw (mln)", "filtered (mln)", "% filtered")
+
+datatable(statistic, 
+          caption = "Table 2. Quality control statistics.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(ogu_table_t, 
+          caption = "Table 3. Operational genomic unit (OGU) abundance profile by samples.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+# Marker OGUs discovery
+<p style="text-align: justify;">
+Analysis of marker OGUs identified 637 significantly differentiated features between R and NR experimental groups. Of these, 298 were enriched in R, while 339 were enriched in NR. The most prominent microbial species enriched in R included *Blautia wexlerae* (n = 49), *Faecalibacterium prausnitzii* (n = 27), *Fusicatenibacter saccharivorans* (n = 15), *Gemmiger qucibialis* (n = 14), and *Blautia faecis* (n = 8). Conversely, NR exhibited enrichment of distinct microbial taxa, including *F. prausnitzii* (n = 17), *Veillonella parvula* (n = 7), and *Dialister invisus* (n = 7). Although *F. prausnitzii* was detected in both groups, its significantly higher abundance in responders (27 vs. 17 OGUs) suggests potential strain-level or functional variations contributing to treatment outcome. The robust association of *Blautia* species, particularly *B. wexlerae*, with positive response highlights its potential as a predictive biomarker. Notably, the enrichment of oral bacteria *Veillonella parvula* and *Dialister invisus* in NR suggests a potential link between oral microbiome and immunotherapy efficacy. Detailed descriptions of marker OGUs are provided in Table 4. Songbird coefficients for each OGU marker are presented in Figure 2.
+<p>
+
+<p style="text-align: justify;">
+Log ratio values from the metagenomic samples are detailed in Table 5, with their distribution visualized across experimental groups in Figure 3. Statistical analysis utilizing linear mixed-effects models, accounting for dataset and response variables, revealed significant differences between R and NR groups (p < 0.0001). The inclusion of the dataset variable as a random effect to account for technical and biological heterogeneity between studies was statistically significant (p < 0.0001), justifying the employed modeling approach. Residual plot demonstrated an approximately symmetric, unimodal pattern with no extreme outliers (see Figure 4). This visual assessment, combined with the substantial effect size (Cohen's d = 0.91; 95% CI [0.74, 1.08]), supports the robustness of the model's inferences to mild non-normality, aligning with the central limit theorem's applicability to large-sample analyses. A predictive classifier, based on log ratios and logistic regression with SMOTE balancing and LOGO cross validation with dataset as grouping variable, demonstrated a receiver operating characteristic (ROC) area under the curve (AUC) of 0.72 ± 0.12 (Figure 5), with other performance metrics detailed in Table 6 and Figure 6. The enhanced predictive accuracy of our model for identifying NR suggests that therapeutic success likely depends on a multifactorial interplay extending beyond the gut microbiome, potentially involving intrinsic host factors such as tumor biology (e.g., mutational burden, immune microenvironment) or patient-specific characteristics (e.g., genetic polymorphisms, metabolic status).
+<p>
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(ogu.markers, 
+          caption = "Table 4. Marker OGU with Sondbird coefficients (MEAN ± SD).",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| include: false
+coef_barplot <- ggplot(songbird_coef, aes(x = reorder(featureid, mean), y=mean)) + 
+    geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd), width=.2,
+        position=position_dodge(0.05), col = "gray58") +
+    # geom_point(shape = 0, size = 0.25)+
+    geom_hline(yintercept = 0, col = "red")+
+    theme_bw()+
+    theme(
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) + 
+    theme(
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(fill = NA))+
+    ylab("Mean R/NR + k")+
+    xlab("OGUs")
+```
+
+```{r fig.width=8, fig.height=3}
+#| echo: false
+download_this(
+  coef_barplot,
+  output_name = "coef_barplot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=8, fig.height=3}
+#| echo: false
+#| fig-cap: Figure 2. The barplot depicts Songbird differential abundance coefficients (MEAN ± SD) for marker Operational Genomic Units (OGUs), with the x-axis representing individual OGUs and the y-axis showing the magnitude and direction of association coefficients.
+coef_barplot
+```
+
+```{r}
+#| include: false
+library(zCompositions)
+
+ogu_table.markers <- ogu_table[colnames(ogu_table) %in% ogu.markers$featureid]
+ogu_table.markers <- ogu_table.markers + 0.0001
+
+df.log_ratio <- NULL
+for (i in rownames(ogu_table.markers)){
+    df <- ogu_table.markers[rownames(ogu_table.markers) %in% i,]
+    
+    df_denominator <- df[colnames(df) %in% ogu.markers$featureid[ogu.markers$biomarker == "denominator"]]
+    df_numerator <- df[colnames(df) %in% ogu.markers$featureid[ogu.markers$biomarker == "numerator"]]
+    
+    df_denominator <- df_denominator[df_denominator > 0]
+    df_numerator <- df_numerator[df_numerator > 0]
+    
+    log_ratio <- log(sum(df_numerator)/sum(df_denominator))
+    df.s <- data.frame(sampleid = i, log_ratio)
+    df.log_ratio <- rbind(df.s, df.log_ratio)
+}
+
+df.log_ratio <- merge(meta_data, df.log_ratio, by = 1)
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(df.log_ratio, 
+          caption = "Table 5. Log ratio (LR) values of marker OGU across samples.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| message: true
+#| warning: false
+#| include: false
+logratio_plot <- ggplot(df.log_ratio, aes(log_ratio, response, col = response))+
+      stat_halfeye()+
+      xlab("Log ratio")+
+      ylab("Response")+
+      theme_pubr()+
+      theme(legend.position = "none")+
+      scale_color_brewer(palette = "Set1")
+```
+
+```{r fig.width=4, fig.height=3}
+#| echo: false
+download_this(
+  logratio_plot,
+  output_name = "logratio_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=4, fig.height=3}
+#| echo: false
+#| fig-cap: Figure 3. The boxplot shows log ratio (LR) values obtained using marker OGU. LR is highest in the R group (median = 3.0) and lowest in NR group (median = 1.4).
+logratio_plot
+```
+
+```{r}
+#| echo: false
+lmer.log_ratio <- lmer(log_ratio ~ response + (1|dataset), data = df.log_ratio)
+```
+
+##### lmer test results
+```{r}
+#| echo: false
+summary(glht(lmer.log_ratio, linfct = mcp(response = "Tukey")), test = adjusted("bonferroni"))
+```
+
+##### Dataset variable inportance
+```{r}
+#| echo: false
+ranova(lmer.log_ratio)
+```
+
+##### Residuals of the model normality testing
+[Figure 4](data/qqplot.pdf)
+
+```{r fig.width=5, fig.height=4}
+#| echo: false
+#| fig-cap: Figure 4. Quantile-quantile diagram of mixed linear model residuals.
+qqtest(residuals(lmer.log_ratio), dist = "normal")
+```
+
+##### Effect size estimation
+```{r}
+#| echo: false
+cohens_d(log_ratio ~ response, data = df.log_ratio)
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+
+df.log_ratio <- merge(df.log_ratio, statistic[-2], by = 1)
+
+df.log_ratio$response <- factor(df.log_ratio$response, levels = c("R", "NR"))
+df.log_ratio$dataset <- factor(df.log_ratio$dataset)
+
+groups <- unique(df.log_ratio$dataset)
+
+recipe_balanced <- recipe(response ~ log_ratio, data = df.log_ratio) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_smote(response, over_ratio = 0.8)
+
+model <- logistic_reg() %>%
+  set_engine("glm") %>%
+  set_mode("classification")
+
+workflow_balanced <- workflow() %>%
+  add_recipe(recipe_balanced) %>%
+  add_model(model)
+
+logo_cv <- function(group) {
+  
+  test_data <- df.log_ratio %>% filter(dataset == group)
+  train_data <- df.log_ratio %>% filter(dataset != group)
+  
+  fitted_model <- fit(workflow_balanced, data = train_data)
+  
+  predictions <- fitted_model %>%
+    predict(new_data = test_data, type = "prob") %>%
+    bind_cols(
+      predict(fitted_model, new_data = test_data, type = "class"),
+      test_data
+    )
+  
+  list(
+    predictions = predictions,
+    metrics = predictions %>%
+      metrics(truth = response, estimate = .pred_class, .pred_R)
+  )
+}
+
+logo_results <- map(groups, logo_cv, .progress = TRUE)
+
+all_predictions <- map_dfr(logo_results, ~.x$predictions)
+
+roc_curve_logo <- all_predictions %>%
+  roc_curve(truth = response, .pred_R)
+
+roc_plot <- autoplot(roc_curve_logo) +
+  ggtitle("ROC Curve from LOGO CV") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  theme_minimal()
+
+group_performance <- all_predictions %>%
+  group_by(dataset) %>%
+  summarise(
+    auc = roc_auc_vec(truth = response, .pred_R),
+    accuracy = accuracy_vec(truth = response, estimate = .pred_class),
+    sensitivity = sensitivity_vec(truth = response, estimate = .pred_class),
+    specificity = specificity_vec(truth = response, estimate = .pred_class),
+    precision = precision_vec(truth = response, estimate = .pred_class),
+    .groups = "drop"
+  )
+
+group_performance$f1_score <- 2 * (group_performance$precision * group_performance$sensitivity) / 
+  (group_performance$precision + group_performance$sensitivity)
+
+group_performance_melt <- melt(group_performance)
+colnames(group_performance_melt)[c(2,3)] <- c("metrics", "value")
+
+metrics_plot <- ggplot(group_performance_melt, aes(value, metrics))+
+    stat_halfeye()+
+    xlab("Value")+
+    ylab("Metrics")+
+    theme_pubr()+
+    theme(legend.position = "none")
+```
+
+```{r fig.height=4, fig.width=4}
+#| echo: false
+download_this(
+  roc_plot,
+  output_name = "roc_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=4, fig.height=4}
+#| echo: false
+#| fig-cap: Figure 5. Receiver operating characteristic (ROC) curve for log regression performance using "leave-one group out" (LOGO) cross-validation.
+roc_plot
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+group_performance[-1] <- apply(group_performance[-1], 2, function(x) round(x, 2))
+
+datatable(group_performance, 
+          caption = "Table 6. Log regression prediction metrics.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.width=4.5, fig.height=3.5}
+#| echo: false
+download_this(
+  metrics_plot,
+  output_name = "metrics_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=4.5, fig.height=3.5}
+#| echo: false
+#| fig-cap: Figure 6. Distribution of log regression prediction metrics across datasets obtained by LOGO cross-validation.
+metrics_plot
+```
+
+# Marker OGUs characterization
+<p style="text-align: justify;">
+As a summarizing tool gene set enrichment analysis (GSEA) was used which identified patterns of change related to microbial taxonomy (phylum, genus) and origin, distinguishing between microbes from non-intestinal body sites (oral cavity, airways, vagina, skin) and environment (food).
+<p>
+
+### Taxonomy
+<p style="text-align: justify;">
+OGUs with 98% nucleotide identity were grouped by taxonomy or other characteristics to facilitate enrichment analysis within specific groups. Results indicated that the Bacteroidetes phylum was upregulated in the R group and Proteobacteria in the NR group (abs. NES > 2, GSEA adj. p < 0.01). Obtained results presented in Figure 7 and Table 7. Bacteroidetes OGU included in core enrichment species presented in Table 8. Notably, enrichment of Proteobacteria OGUs included potential opportunistic species such as *Klebsiella quasipneumoniae*, *Klebsiella michiganensis*, *Enterobacter ludwigii*, *Enterobacter kobei*, *Citrobacter youngae*, *Citrobacter portucalensis*, *Citrobacter freundii*, and *Haemophilus* sp001815355 (see Table 9). At the genus level, *Blautia*, *Bacteroides*, *Fusicatenibacter*, *Gemmiger*, and *Faecalibacterium* were enriched in the R group, while *Veillonella*, *Prevotella*, *Dysosmobacter*, and *Acetatifactor* were enriched in the NR group (see Figure 8 and Table 10; GSEA adj. p < 0.01).
+<p>
+
+### Origin
+<p style="text-align: justify;">
+Clustering 3,816 OGUs from this study with 9,412 MAGs derived from different body sites and 10,112 food-derived MAGs revealed that 293 OGUs exhibited complementary to those from non-intestinal sources (see Table 11), and 91 were complementary to food-derived microbes, at 95% nucleotide similarity (Table 12), which corresponds to the species level. Based on the GSEA results, NR-linked OGUs were enriched by food-derived (see Figure 9 and Table 13) and oral (see Figure 10 and Table 14) microbial flora. Core food-derived OGUs comprised *Bifidobacterium animalis*, *Citrobacter freundii*, *Enterobacter kobei*, *Enterococcus faecalis*, *Enterococcus faecium*, *Escherichia coli*, *K. michiganensis*, *K. quasipneumoniae*, *Lactobacillus gasseri*, *Limosilactobacillus reuteri*, and *Megasphaera elsdenii*, showing substantial overlap with core enrichment patterns observed in Proteobacteria (Table 15). Core enrichment patterns within the oral cavity included OGU representatives of Veillonellales and Enterobacterales, specifically *Anaeroglobus micronuciformis*, *Escherichia coli*, *Veillonella parvula*, and *Haemophilus* sp001815355 (Table 16).
+<p>
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+
+vec <- ogu.markers$mean
+names(vec) <- ogu.markers$featureid
+vec <- sort(vec, decreasing = T)
+
+fgsea_phylum <- GSEA(vec, TERM2GENE = ogu.markers[c(8,1)], eps = 0)
+
+fgsea_phylum_df <- as.data.frame(fgsea_phylum)
+rownames(fgsea_phylum_df) <- 1:nrow(fgsea_phylum_df)
+fgsea_phylum_df <- fgsea_phylum_df[-2]
+
+core_enrichment_phylum_1 <- data.frame(featureid = unlist(str_split(fgsea_phylum_df$core_enrichment[[1]], "\\/")))
+core_enrichment_phylum_1 <- merge(core_enrichment_phylum_1, ogu.markers, by = 1)
+core_enrichment_phylum_1 <- core_enrichment_phylum_1[c(1,7:13)]
+
+core_enrichment_phylum_2 <- data.frame(featureid = unlist(str_split(fgsea_phylum_df$core_enrichment[[2]], "\\/")))
+core_enrichment_phylum_2 <- merge(core_enrichment_phylum_2, ogu.markers, by = 1)
+core_enrichment_phylum_2 <- core_enrichment_phylum_2[c(1,7:13)]
+
+fgsea_genus <- GSEA(vec, TERM2GENE = ogu.markers[c(12,1)], eps = 0)
+
+fgsea_genus_df <- as.data.frame(fgsea_genus)
+rownames(fgsea_genus_df) <- 1:nrow(fgsea_genus_df)
+fgsea_genus_df <- fgsea_genus_df[-2]
+fgsea_genus_df <- fgsea_genus_df[order(fgsea_genus_df$NES, decreasing = T),]
+
+gsea_phylum_plot <- gseaNb(object = fgsea_phylum, 
+      geneSetID = fgsea_phylum_df$ID, 
+      curveCol = brewer.pal(name = "Set1", n = 9), 
+      htCol = c("#A50F15", "#08519C"))
+                              
+
+gsea_genus_plot <- gseaNb(object = fgsea_genus,
+      geneSetID = fgsea_genus_df$ID, 
+      curveCol = c(brewer.pal(name = "Set1", n = 9)[-6], "cyan4"), 
+      htCol = c("#A50F15", "#08519C"))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(fgsea_phylum_df[1:8], 
+          caption = "Table 7. GSEA results at the phylum level.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(core_enrichment_phylum_1, 
+          caption = "Table 8. GSEA results at the phylum level: Bacteroidetes core enrichment.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(core_enrichment_phylum_2, 
+          caption = "Table 9. GSEA results at the phylum level: Proteobacteria core enrichment.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.width=6, fig.height=5.5}
+#| echo: false
+download_this(
+  gsea_phylum_plot,
+  output_name = "gsea_phylum_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=6, fig.height=5.5}
+#| echo: false
+#| fig-cap: Figure 7. GSEA results at the phylum level.
+gsea_phylum_plot
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(fgsea_genus_df[1:8], 
+          caption = "Table 10. GSEA results at the genus level.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.width=6, fig.height=5.5}
+#| echo: false
+download_this(
+  gsea_genus_plot,
+  output_name = "gsea_genus_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=6, fig.height=5.5}
+#| echo: false
+#| fig-cap: Figure 8. GSEA results at the genus level.
+gsea_genus_plot
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+
+food$site <- "Food"
+fgsea_food <- GSEA(vec, TERM2GENE = food[c(2,1)], eps = 0, pAdjustMethod = "BH")
+
+fgsea_food_df <- as.data.frame(fgsea_food)
+rownames(fgsea_food_df) <- 1:nrow(fgsea_food_df)
+fgsea_food_df <- fgsea_food_df[-2]
+fgsea_food_df <- fgsea_food_df[order(fgsea_food_df$NES, decreasing = T),]
+
+core_enrichment_food <- tax_table[rownames(tax_table) %in% unlist(str_split(fgsea_food_df$core_enrichment, pattern = "\\/")),]
+core_enrichment_food <- core_enrichment_food[order(core_enrichment_food$species),]
+
+fgsea_bodysite <- GSEA(vec, TERM2GENE = body_site[c(2,1)], pAdjustMethod = "BH")
+
+fgsea_bodysite_df <- as.data.frame(fgsea_bodysite)
+rownames(fgsea_bodysite_df) <- 1:nrow(fgsea_bodysite_df)
+fgsea_bodysite_df <- fgsea_bodysite_df[-2]
+fgsea_bodysite_df <- fgsea_bodysite_df[order(fgsea_bodysite_df$NES, decreasing = T),]
+
+core_enrichment_bodysite <- tax_table[rownames(tax_table) %in% unlist(str_split(fgsea_bodysite_df$core_enrichment, pattern = "\\/")),]
+core_enrichment_bodysite <- core_enrichment_bodysite[order(core_enrichment_bodysite$species),]
+
+gsea_food_plot <- gseaNb(fgsea_food, 
+       geneSetID = 'Food', 
+       htCol = c("#A50F15", "#08519C"))
+
+gsea_bodysite_plot <- gseaNb(object = fgsea_bodysite,
+       geneSetID = 'Oral cavity', 
+       htCol = c("#A50F15", "#08519C"))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+food_df <- merge(food, cbind(rownames(tax_table), tax_table), by = 1)
+
+datatable(food_df, 
+          caption = "Table 11. OGUs clustered with food-associated MAGs at 95% nucleotide similarity.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+body_site_df <- merge(body_site, cbind(rownames(tax_table), tax_table), by = 1)
+
+datatable(body_site_df, 
+          caption = "Table 12. OGUs clustered with different bodysite-associated MAGs at 95% nucleotide similarity.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(fgsea_food_df[1:8], 
+          caption = "Table 13. GSEA results at food-related OGUs.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(fgsea_bodysite_df[1:8], 
+          caption = "Table 14. GSEA results at bodysite-related OGUs.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(core_enrichment_food, 
+          caption = "Table 15. GSEA results at food-related OGUs: core enrichment.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.width=4.5, fig.height=3.5}
+#| echo: false
+download_this(
+  gsea_food_plot,
+  output_name = "gsea_food_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=4.5, fig.height=3.5}
+#| echo: false
+#| fig-cap: Figure 9. GSEA results at food-related OGUs.
+gsea_food_plot
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(core_enrichment_bodysite, 
+          caption = "Table 16. GSEA results at food-related OGUs: core enrichment: core enrichment.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.width=4.5, fig.height=3.5}
+#| echo: false
+download_this(
+  gsea_bodysite_plot,
+  output_name = "gsea_bodysite_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=4.5, fig.height=3.5}
+#| echo: false
+#| fig-cap: Figure 10. GSEA results at bodysite-related OGUs.
+gsea_bodysite_plot
+```
+
+# Functional analysis of marker OGU
+<p style="text-align: justify;">
+Functional analysis of marker OGUs was performed using the MetaCerberus pipeline, CAZy and KEGG databases. Logistic regression was used to examine statistical relationships between functional groups and R/NR OGU sets. GSEA was then employed to identify links between CAZy/KEGG functional gene groups and R/NR OGU sets, utilizing p-values generated by the logistic regression.
+<p>
+
+### CAZy
+<p style="text-align: justify;">
+Glycoside hydrolase (GH) functional groups were linked to the R OGU set (NES = 1.4, adj. p = 0.003). Obtained results presented in Figure 11 and Table 17. The core enrichment set included 30 glycoside hydrolase families, such as GH39 (alpha-L-iduronidase), GH42 (beta-galactosidase), GH43 (beta-xylosidase), GH51 (endoglucanase), and GH73 (lysozyme) (see Table 18). The most common microbiota genera associated with these enriched GH families were *Blautia* (31 genomes), *Fusicatenibacter* (n = 11), *Bacteroides* (n=9), and *Parabacteroides* (n=5) (see Figure 12).
+<p>
+
+### KEGG
+<p style="text-align: justify;">
+Analysis of enriched KEGG pathways revealed a significant association with the R OGU and NR OGU groups (abs. NES > 1, adj. p < 0.01). Obtained results presented in Figure 13 and Table 19. Specifically, the R OGU group exhibited enrichment for eight KEGG pathways, including: ko00340 (Histidine metabolism), ko01210 (2-Oxocarboxylic acid metabolism), ko00290 (Valine, leucine and isoleucine biosynthesis), ko00220 (Arginine biosynthesis), ko01230 (Biosynthesis of amino acids), ko00920 (Sulfur metabolism), ko00040 (Pentose and glucuronate interconversions), and ko01240 (Biosynthesis of cofactors). The NR OGU group, in contrast, showed enrichment for two KEGG pathways: ko00540 (Lipopolysaccharide biosynthesis) and ko02040 (Flagellar assembly). Further analysis revealed distinct bacterial genera associated with these functional pathways (see Figure 14). *Blautia* and *Fusicatenibacter* were primarily linked to the pathways enriched in the R OGU marker group, while *Veillonella*, *Dialister*, and *Enterobacter* were associated with ko00540 (Lipopolysaccharide biosynthesis) in the NR group. Similarly, *Acetifactor*, *Roseburia*, and *Ruminoclostridium* were linked to ko02040 (Flagellar assembly) enrichment in the NR group. These findings suggest potential mechanistic links between specific microbial taxa and the observed functional differences between the R OGU and NR OGU groups.
+<p>
+
+<p style="text-align: justify;">
+Our previous metagenomic analysis revealed significant enrichment of Wood-Ljungdahl (WL) pathway-encoding MAGs from *Blautia*, *Oliverpabstia*, *Fusicatenibacter*, and *Choladousia* genera in immunotherapy-responsive melanoma patients [Zakharevich et al., 2024]. In the current study, we identified eight core WL pathway gene clusters (fchA - K01500; cooS, acsA - K00198; acsE - K15023; acsB - K14138; cdhE, acsC - K00197; cdhD, acsD - K00194; rnfC2 - K25008; metV - K25007) that were consistently overrepresented in operational genomic units (OGUs) associated with positive treatment outcomes. Notably, these WL pathway genes showed strong associations with *Blautia* and *Fusicatenibacter* MAG sequences (see Figure 15). Functional divergence emerged between R- and NR-associated *F. prausnitzii* strains (see Table S20). NR-linked strains exhibited marked enrichment in galactose metabolism (ko00052), driven by core genes including galT (K00965), gatY/kbaY (K08302), agaS (K02082), and gatZ/kbaZ (K16371). These strains also overrepresented the N-acetyl-D-galactosamine utilization system (agaF - K02744; agaV - K02745, agaW - K02746, agaE - K02747).
+<p>
+
+```{r}
+#| include: false
+
+cazy.genes <- data.frame()  # Лучше инициализировать как пустой data.frame
+
+for(i in colnames(CAZy)) {
+  ft <- cbind(rownames(CAZy), CAZy[, i, drop = FALSE])  # Более безопасное подмножество
+  colnames(ft) <- c("id", "gene")
+  
+  ft <- merge(ogu.markers, ft, by = 1)
+  ft <- ft[, c(1, 2, ncol(ft))]  # Более универсальный выбор столбцов
+  colnames(ft)[3] <- "gene"
+  
+  ft$biomarker <- as.factor(ft$biomarker)
+  ft$gene <- as.factor(ft$gene)
+  
+  if (nlevels(ft$gene) > 1) {  # Более надежная проверка уровней факторов
+    # Вычисление OR
+    OR <- oddsratio(table(ft[, c("biomarker", "gene")]))
+    
+    # Логистическая регрессия
+    model <- glm(biomarker ~ gene, 
+                 data = ft,
+                 family = binomial())
+    
+    # Сохранение результатов
+    cazy.genes <- rbind(cazy.genes, 
+                        data.frame(
+                          gene = i, 
+                          coefficient = coef(model)[2], 
+                          odds_ratio = OR$Odds_ratio,
+                          CI_low = OR$CI_low,
+                          CI_high = OR$CI_high,
+                          p_value = summary(model)$coefficients[2,4]
+                        ))
+  }
+}
+
+cazy.genes <- cazy.genes[cazy.genes$CI_low != "NaN",]
+cazy.genes <- cazy.genes[cazy.genes$CI_high != "NaN",]
+
+vec_cazy <- -log10(cazy.genes$p_value)
+names(vec_cazy) <- cazy.genes$gene
+
+cazy_coef <- cazy.genes$coefficient
+cazy_coef[cazy_coef > 0] <- 1
+cazy_coef[cazy_coef < 0] <- -1
+
+vec_cazy <- vec_cazy*cazy_coef
+
+vec_cazy <- sort(vec_cazy, decreasing = T)
+
+fgsea_cazy <- GSEA(vec_cazy, TERM2GENE = CAZy_sets[c(1,2)], eps = 0, pAdjustMethod = "BH")
+
+fgsea_cazy_df <- as.data.frame(fgsea_cazy)
+rownames(fgsea_cazy_df) <- 1:nrow(fgsea_cazy_df)
+fgsea_cazy_df <- fgsea_cazy_df[-2]
+fgsea_cazy_df <- fgsea_cazy_df[order(fgsea_cazy_df$NES, decreasing = T),]
+
+core_enrichment_GH <- unlist(str_split(fgsea_cazy_df$core_enrichment, pattern = "\\/"))
+core_enrichment_GH <- merge(data.frame(core_enrichment_GH), CAZy_sets[c(2,3)], by = 1)
+colnames(core_enrichment_GH) <- c("family", "function")
+core_enrichment_GH <- core_enrichment_GH[order(core_enrichment_GH$family),]
+
+gsea_cazy_plot <- gseaNb(fgsea_cazy, 
+       geneSetID = fgsea_cazy_df$ID, 
+       htCol = c("#A50F15", "#08519C"))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(fgsea_cazy_df[1:8], 
+          caption = "Table 17. GSEA results with CAZy database.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(core_enrichment_GH, 
+          caption = "Table 18. GSEA results with CAZy database: core enrichment.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.height=3.5, fig.width=4.5}
+#| echo: false
+download_this(
+  gsea_cazy_plot,
+  output_name = "gsea_cazy_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=4.5, fig.height=3.5}
+#| echo: false
+#| fig-cap: Figure 11. GSEA results with CAZy database.
+gsea_cazy_plot
+```
+
+```{r}
+#| include: false
+CAZy_core <- CAZy[colnames(CAZy) %in% core_enrichment_GH$family]
+CAZy_core <- CAZy_core[rowSums(CAZy_core) > round(length(core_enrichment_GH$family)*65/100),]
+
+CAZy_core_df <- data.frame(featureid = row.names(CAZy_core))
+CAZy_core_df$freq = 1
+
+CAZy_core_df <- merge(CAZy_core_df, ogu.markers, by = 1)
+
+CAZy_core_df_2 <- CAZy_core_df %>% group_by(genus, phylum, biomarker) %>% summarise(freq = sum(freq))
+CAZy_core_df_2 <- CAZy_core_df_2[order(CAZy_core_df_2$freq, decreasing = T),]
+CAZy_core_df_2$biomarker <- as.factor(CAZy_core_df_2$biomarker)
+
+cazy_barplot <- ggplot(CAZy_core_df_2, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 65% core enrichment genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("Glysosil hydrolase")
+      
+```
+
+```{r fig.width=6, fig.height=4}
+#| echo: false
+download_this(
+  cazy_barplot,
+  output_name = "gsea_food_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=6, fig.height=4}
+#| echo: false
+#| fig-cap: Figure 12. Marker OGU contains CAZy core enrichment glycoside hydrolase within the genome.
+cazy_barplot
+```
+
+```{r}
+#| include: false
+kegg.genes <- data.frame()
+
+for(i in colnames(KEGG)) {
+  ft <- cbind(rownames(KEGG), KEGG[, i, drop = FALSE])
+  colnames(ft) <- c("id", "gene")
+  
+  ft <- merge(ogu.markers, ft, by = 1)
+  ft <- ft[, c(1, 2, ncol(ft))]
+  colnames(ft)[3] <- "gene"
+  
+  ft$biomarker <- as.factor(ft$biomarker)
+  ft$gene <- as.factor(ft$gene)
+  
+  if (nlevels(ft$gene) > 1) {
+    
+    OR <- oddsratio(table(ft[, c("biomarker", "gene")]))
+    
+    model <- glm(biomarker ~ gene, 
+                 data = ft,
+                 family = binomial())
+    
+    kegg.genes <- rbind(kegg.genes, 
+                        data.frame(
+                          gene = i, 
+                          coefficient = coef(model)[2], 
+                          odds_ratio = OR$Odds_ratio,
+                          CI_low = OR$CI_low,
+                          CI_high = OR$CI_high,
+                          p_value = summary(model)$coefficients[2,4]
+                        ))
+  }
+}
+
+kegg.genes <- kegg.genes[kegg.genes$CI_low != "NaN",]
+kegg.genes <- kegg.genes[kegg.genes$CI_high != "NaN",]
+
+kegg.genes$p_adj <- p.adjust(kegg.genes$p_value, method = "BH")
+
+vec_kegg <- -log10(kegg.genes$p_value)
+names(vec_kegg) <- kegg.genes$gene
+
+kegg_coef <- kegg.genes$coefficient
+kegg_coef[kegg_coef > 0] <- 1
+kegg_coef[kegg_coef < 0] <- -1
+
+vec_kegg <- vec_kegg*kegg_coef
+ 
+vec_kegg <- sort(vec_kegg, decreasing = T)
+
+set.seed(123)
+fgsea_kegg <- gseKEGG(geneList = vec_kegg, organism = "ko", eps = 0, pvalueCutoff = 0.01)
+
+fgsea_kegg_df <- as.data.frame(fgsea_kegg)
+rownames(fgsea_kegg_df) <- 1:nrow(fgsea_kegg_df)
+fgsea_kegg_df <- fgsea_kegg_df[-2]
+fgsea_kegg_df <- fgsea_kegg_df[order(fgsea_kegg_df$NES, decreasing = T),]
+
+fgsea_kegg_df$name <- c("Histidine metabolism", 
+                        "2-Oxocarboxylic acid metabolism", 
+                        "Valine, leucine and isoleucine biosynthesis", 
+                        "Arginine biosynthesis", 
+                        "Biosynthesis of amino acids", 
+                        "Sulfur metabolism", 
+                        "Pentose and glucuronate interconversions", 
+                        "Biosynthesis of cofactors", 
+                        "Lipopolysaccharide biosynthesis", 
+                        "Flagellar assembly")
+
+gsea_kegg_plot <- gseaNb(fgsea_kegg,
+       geneSetID = fgsea_kegg_df$ID,
+       curveCol = c(brewer.pal(name = "Set1", n = 9)[-6], "cyan4", "darkmagenta", "black"),
+       htCol = c("#A50F15", "#08519C"))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(fgsea_kegg_df[c(1,11,2:8)], 
+          caption = "Table 19. GSEA results with KEGG database.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.width=7.5, fig.height=5}
+#| echo: false
+download_this(
+  gsea_kegg_plot,
+  output_name = "gsea_kegg_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=7.5, fig.height=5}
+#| echo: false
+#| fig-cap: Figure 13. GSEA results with KEGG database.
+gsea_kegg_plot
+```
+
+```{r}
+#| include: false
+core_enrich <- function(df){
+      core_enrichment <- data.frame()
+      for (i in 1:length(df$core_enrichment)){
+            df_enrichment <- unlist(str_split(df$core_enrichment[[i]], pattern = "\\/"))
+            df_enrichment <- data.frame(df_enrichment)
+            colnames(df_enrichment) <- c("KO")
+            
+            df_enrichment$pathway <- df[,1][i]
+            
+            core_enrichment <- rbind(df_enrichment, core_enrichment)
+      }
+      return(core_enrichment)
+}
+
+core_enrich_kegg <- core_enrich(fgsea_kegg_df)
+
+KEGG_core <- KEGG[colnames(KEGG) %in% unique(core_enrich_kegg$KO)]
+
+pathways <- unique(core_enrich_kegg$pathway)
+
+processing_pathway <- function(pathway, perc){
+      ko_list <- core_enrich_kegg$KO[core_enrich_kegg$pathway %in% pathway]
+
+      KEGG_core_sbs <- KEGG_core[ko_list]
+      KEGG_core_sbs <- rowSums(KEGG_core_sbs)
+      KEGG_core_sbs <- KEGG_core_sbs[KEGG_core_sbs > round(length(ko_list)*perc/100)]
+
+      KEGG_core_sbs <- as.data.frame(KEGG_core_sbs)
+      colnames(KEGG_core_sbs) <- "freq"
+      KEGG_core_sbs$freq = 1
+      KEGG_core_sbs <- cbind(feaureid = rownames(KEGG_core_sbs), KEGG_core_sbs)
+      KEGG_core_sbs <- merge(KEGG_core_sbs, ogu.markers, by = 1)
+
+      KEGG_core_sbs_2 <- KEGG_core_sbs %>% group_by(genus, phylum, biomarker) %>% summarise(freq = sum(freq))
+      KEGG_core_sbs_2 <- KEGG_core_sbs_2[order(KEGG_core_sbs_2$freq, decreasing = T),]
+      KEGG_core_sbs_2$biomarker <- as.factor(KEGG_core_sbs_2$biomarker)
+      KEGG_core_sbs_2$phylum <- as.factor(KEGG_core_sbs_2$phylum)
+      
+      return(KEGG_core_sbs_2)
+}
+
+ko02040 <- processing_pathway(pathways[1], 60)
+ko00540 <- processing_pathway(pathways[2], 60)
+ko01240 <- processing_pathway(pathways[3], 65)
+ko00040 <- processing_pathway(pathways[4], 60)
+ko00920 <- processing_pathway(pathways[5], 50)
+ko01230 <- processing_pathway(pathways[6], 75)
+ko00220 <- processing_pathway(pathways[7], 65)
+ko00290 <- processing_pathway(pathways[8], 85)
+ko01210 <- processing_pathway(pathways[9], 80)
+ko00340 <- processing_pathway(pathways[10], 87)
+
+ko02040_barplot <- ggplot(ko02040, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 60% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko02040: Flagellar assembly")
+
+ko00540_barplot <- ggplot(ko00540, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 60% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko00540: Lipopolysaccharide biosynthesis")
+
+ko01240_barplot <- ggplot(ko01240, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 60% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko01240: Biosynthesis of cofactors")
+
+ko00040_barplot <- ggplot(ko00040, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 60% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko00040: Pentose and glucuronate interconversions")
+
+ko00920_barplot <- ggplot(ko00920, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 50% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko00920: Sulfur metabolism")
+
+ko01230_barplot <- ggplot(ko01230, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 75% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko01230: Biosynthesis of amino acids")
+
+ko00220_barplot <- ggplot(ko00220, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 65% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko00220: Arginine biosynthesis")
+
+ko00290_barplot <- ggplot(ko00290, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 85% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko00290: Valine, leucine and isoleucine biosynthesis")
+
+ko01210_barplot <- ggplot(ko01210, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 80% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko01210: 2-Oxocarboxylic acid metabolism")
+
+ko00340_barplot <- ggplot(ko00340, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 87% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("ko00340: Histidine metabolism")
+```
+
+```{r}
+#| include: false
+kegg_barplot <- ggarrange(
+      ko00340_barplot, 
+      ko01210_barplot, 
+      ko00290_barplot, 
+      ko00220_barplot, 
+      ko01230_barplot, 
+      ko00920_barplot, 
+      ko00040_barplot, 
+      ko01240_barplot, 
+      ko00540_barplot, 
+      ko02040_barplot, 
+      ncol = 2, nrow = 5
+)
+```
+
+```{r fig.width=12.5, fig.height=18.5}
+#| echo: false
+download_this(
+  kegg_barplot,
+  output_name = "kegg_barplot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=12.5, fig.height=18.5}
+#| echo: false
+#| fig-cap: Figure 14. Marker OGU contains KEGG pathways core enrichment gene groups within the genome.
+kegg_barplot
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+M00377 <- c("K00198", "K05299", "K15022", "K22015", "K25123", 
+            "K25124", "K01938", "K01491", "K01500", "K00297", 
+            "K25007", "K25008", "K15023", "K14138", "K00197", 
+            "K00194")
+
+M00377.genes <- kegg.genes[kegg.genes$gene %in% M00377,]
+M00377.genes <- M00377.genes[M00377.genes$p_adj < 0.05,]
+
+KEGG_M00377 <- KEGG[colnames(KEGG) %in% M00377.genes$gene]
+
+KEGG_M00377_sbs <- rowSums(KEGG_M00377)
+KEGG_M00377_sbs <- KEGG_M00377_sbs[KEGG_M00377_sbs > 4]
+
+KEGG_M00377_sbs <- as.data.frame(KEGG_M00377_sbs)
+colnames(KEGG_M00377_sbs) <- "freq"
+KEGG_M00377_sbs$freq = 1
+KEGG_M00377_sbs <- cbind(feaureid = rownames(KEGG_M00377_sbs), KEGG_M00377_sbs)
+KEGG_M00377_sbs <- merge(KEGG_M00377_sbs, ogu.markers, by = 1)
+
+KEGG_M00377_sbs_2 <- KEGG_M00377_sbs %>% group_by(genus, phylum, biomarker) %>% summarise(freq = sum(freq))
+KEGG_M00377_sbs_2 <- KEGG_M00377_sbs_2[order(KEGG_M00377_sbs_2$freq, decreasing = T),]
+KEGG_M00377_sbs_2$biomarker <- as.factor(KEGG_M00377_sbs_2$biomarker)
+KEGG_M00377_sbs_2$phylum <- as.factor(KEGG_M00377_sbs_2$phylum)
+
+M00377_barplot <- ggplot(KEGG_M00377_sbs_2, aes(freq, reorder(genus, freq)))+
+      geom_bar(stat = "identity", width = 0.55)+
+      facet_wrap(~biomarker)+
+      theme_pubclean()+
+      theme(legend.position = "right")+
+      xlab("Number of genomes carried > 50% genes")+
+      ylab("Genus")+
+      scale_fill_brewer(palette = "Set1")+
+      ggtitle("Wood-Ljungdahl pathway")
+
+```
+
+```{r fig.width=6, fig.height=4}
+#| echo: false
+download_this(
+  M00377_barplot,
+  output_name = "WL_barplot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=6, fig.height=4}
+#| echo: false
+#| fig-cap: Figure 15. Marker OGU contains overrepresented in R group WL-pathway genes within the genome.
+M00377_barplot
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+fp.markers <- ogu.markers[!is.na(str_extract(ogu.markers$species, "Faecalibacterium prausnitzii")),]
+fp.markers$featureid
+
+KEGG.fp <- KEGG[rownames(KEGG) %in% fp.markers$featureid,]
+KEGG.fp <- KEGG.fp[colSums(KEGG.fp) > 0]
+
+fp.genes <- data.frame()
+for(i in colnames(KEGG.fp)) {
+  ft <- cbind(rownames(KEGG.fp), KEGG.fp[, i, drop = FALSE])
+  colnames(ft) <- c("id", "gene")
+  
+  ft <- merge(fp.markers, ft, by = 1)
+  ft <- ft[, c(1, 2, ncol(ft))]
+  colnames(ft)[3] <- "gene"
+  
+  ft$biomarker <- as.factor(ft$biomarker)
+  ft$gene <- as.factor(ft$gene)
+  
+  if (nlevels(ft$gene) > 1) {
+    
+    OR <- oddsratio(table(ft[, c("biomarker", "gene")]))
+    
+    model <- glm(biomarker ~ gene, 
+                 data = ft,
+                 family = binomial())
+    
+    fp.genes <- rbind(fp.genes, 
+                        data.frame(
+                          gene = i, 
+                          coefficient = coef(model)[2], 
+                          odds_ratio = OR$Odds_ratio,
+                          CI_low = OR$CI_low,
+                          CI_high = OR$CI_high,
+                          p_value = summary(model)$coefficients[2,4]
+                        ))
+  }
+}
+
+fp.genes <- fp.genes[fp.genes$CI_low != "NaN",]
+fp.genes <- fp.genes[fp.genes$CI_high != "NaN",]
+
+fp.genes$p_adj <- p.adjust(fp.genes$p_value, method = "BH")
+
+fp_kegg <- -log10(fp.genes$p_value)
+names(fp_kegg) <- fp.genes$gene
+
+fp_coef <- fp.genes$coefficient
+fp_coef[fp_coef > 0] <- 1
+fp_coef[fp_coef < 0] <- -1
+
+fp_kegg <- fp_kegg*fp_coef
+ 
+fp_kegg <- sort(fp_kegg, decreasing = T)
+
+set.seed(123)
+fp_fgsea_kegg <- gseKEGG(geneList = fp_kegg, organism = "ko", eps = 0, pvalueCutoff = 0.1)
+fp_fgsea_kegg_df <- as.data.frame(fp_fgsea_kegg)
+
+rownames(fp_fgsea_kegg_df) <- NULL
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(fp_fgsea_kegg_df[-11], 
+          caption = "Table 20. Differential KEGG pathway enrichment in Faecalibacterium prausnitzii strains stratified by host response status.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+### References:
+1. [Frankel, Arthur E., et al. "Metagenomic shotgun sequencing and unbiased metabolomic profiling identify specific human gut microbiota and metabolites associated with immune checkpoint therapy efficacy in melanoma patients." Neoplasia 19.10 (2017): 848-855.](https://www.sciencedirect.com/science/article/pii/S1476558617302385)
+2. [Gopalakrishnan, Vancheswaran, et al. "Gut microbiome modulates response to anti–PD-1 immunotherapy in melanoma patients." Science 359.6371 (2018): 97-103.](https://www.science.org/doi/10.1126/science.aan4236)
+3. [Matson, Vyara, et al. "The commensal microbiome is associated with anti–PD-1 efficacy in metastatic melanoma patients." Science 359.6371 (2018): 104-108.](https://www.science.org/doi/10.1126/science.aao3290)
+4. [Spencer, Christine N., et al. "Dietary fiber and probiotics influence the gut microbiome and melanoma immunotherapy response." Science 374.6575 (2021): 1632-1640.](https://www.science.org/doi/10.1126/science.aaz7015?url_ver=Z39.88-2003&rfr_id=ori:rid:crossref.org&rfr_dat=cr_pub%20%200pubmed)
+5. [Lee, Karla A., et al. "Cross-cohort gut microbiome associations with immune checkpoint inhibitor response in advanced melanoma." Nature Medicine 28.3 (2022): 535-544.](https://www.nature.com/articles/s41591-022-01695-5)
+6. [McCulloch, John A., et al. "Intestinal microbiota signatures of clinical response and immune-related adverse events in melanoma patients treated with anti-PD-1." Nature Medicine 28.3 (2022): 545-556.](https://www.nature.com/articles/s41591-022-01698-2)
+7. [Tsakmaklis, Anastasia, et al. "TIGIT+ NK cells in combination with specific gut microbiota features predict response to checkpoint inhibitor therapy in melanoma patients." BMC Cancer 23.1 (2023): 1160.](https://bmccancer.biomedcentral.com/articles/10.1186/s12885-023-11551-5)
+8. [Liu, Ben, et al. "Exploring gut microbiome in predicting the efficacy of immunotherapy in non-small cell lung cancer." Cancers 14.21 (2022): 5401.](https://www.mdpi.com/2072-6694/14/21/5401)
+9. [Heshiki, Yoshitaro, et al. "Predictable modulation of cancer treatment outcomes by the gut microbiota." Microbiome 8 (2020): 1-14.](https://microbiomejournal.biomedcentral.com/articles/10.1186/s40168-020-00811-2)
+10. [Gunjur, Ashray, et al. "A gut microbial signature for combination immune checkpoint blockade across cancer types." Nature Medicine 30.3 (2024): 797-809.](https://www.nature.com/articles/s41591-024-02823-z)
+11. [Peng, Zhi, et al. "The gut microbiome is associated with clinical response to anti–PD-1/PD-L1 immunotherapy in gastrointestinal cancer." Cancer Immunology Research 8.10 (2020): 1251-1261.](https://aacrjournals.org/cancerimmunolres/article/8/10/1251/466881/The-Gut-Microbiome-Is-Associated-with-Clinical)
+12. [Zakharevich, Natalia V., et al. "Systemic metabolic depletion of gut microbiome undermines responsiveness to melanoma immunotherapy." Life Science Alliance 7.5 (2024).](https://www.life-science-alliance.org/content/7/5/e202302480)

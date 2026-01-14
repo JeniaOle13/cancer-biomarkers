@@ -1,0 +1,2967 @@
+---
+format: html
+editor: source
+---
+
+```{r}
+#| include: false
+library(vegan)
+library(ggplot2)
+library(ggpubr)
+library(ggrepel)
+library(ggdist)
+library(scatterpie)
+library(stringr)
+library(RColorBrewer)
+library(lmerTest)
+library(multcomp)
+library(fgsea)
+library(hrbrthemes)
+library(dplyr)
+library(readr)
+library(ggdist)
+library(effectsize)
+library(reshape2)
+library(clusterProfiler)
+library(GseaVis)
+library(qqtest)
+library(Maaslin2)
+library(phyloseq)
+library(UpSetR)
+library(microViz)
+library(zCompositions)
+library(igraph)
+library(tidygraph)
+library(tidyverse)
+
+library(tidyverse)
+library(tidymodels)
+library(themis)
+library(pROC)
+library(recipeselectors)
+
+library(DT)
+library(downloadthis)
+```
+
+```{r}
+#| include: false
+datasets.statistic <- read.csv("data/datasets.statistic.tsv", sep = "\t")
+```
+
+```{r}
+#| include: false
+meta_data <- read.csv("data/meta_data.tsv", sep = "\t")
+meta_data$cancer_type[meta_data$cancer_type != "Melanoma"] <- "Other"
+
+meta_data_2 <- read.csv("data/meta_data-v2.tsv", sep = "\t")
+```
+
+```{r}
+#| include: false
+ogu_table <- read.csv("data/ogu_table.tsv", sep = "\t")
+```
+
+```{r}
+#| include: false
+taxonomy <- read.csv("data/taxonomy.tsv", sep = "\t", row.names = 1)
+
+kingdom <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[1])
+phylum <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[2])
+class_t <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[3])
+order_t <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[4])
+family_t <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[5])
+
+genus <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[6])
+genus[genus == "g__"] <- paste0(family_t[which(genus == "g__")], "_unknown")
+
+species <- sapply(str_split(taxonomy$Taxon, ";"), function(x) x[7])
+
+kingdom <- sub("d__", "", kingdom)
+phylum <- sub("p__", "", phylum)
+class_t <- sub("c__", "", class_t)
+order_t <- sub("o__", "", order_t)
+family_t <- sub("f__", "", family_t)
+genus <- sub("g__", "", genus)
+species <- sub("s__", "", species)
+
+species <- gsub(paste(paste0("_", LETTERS), collapse = "|"), "", species)
+genus <- gsub(paste(paste0("_", LETTERS), collapse = "|"), "", genus)
+
+tax_table <- data.frame(kingdom, phylum, class = class_t, order = order_t, family = family_t, genus, species)
+rownames(tax_table) <- rownames(taxonomy)
+
+tax_table$phylum <- sapply(str_split(tax_table$phylum, "_"), function(x) x[1])
+tax_table <- tax_table[rownames(tax_table) %in% colnames(ogu_table),]
+```
+
+```{r}
+#| include: false
+statistic <- read.csv("data/statistic.tsv", sep = "\t")
+```
+
+```{r}
+#| include: false
+mag.statistic <- read.csv("data/mag.statistic.tsv", sep = "\t")
+```
+
+```{r}
+#| include: false
+ogu_table_t <- as.data.frame(t(ogu_table))
+ogu_table_t <- cbind(featureid = rownames(ogu_table_t), ogu_table_t)
+ogu_table_t <- merge(cbind(featureid = rownames(tax_table), tax_table), ogu_table_t, by = 1)
+ogu_table_t <- ogu_table_t[-1]
+```
+
+```{r}
+#| include: false
+ogu.markers <- read.csv("data/ogu.biomarkers.tsv", sep = "\t")
+ogu.markers <- merge(ogu.markers[c(2,1,3:6)], cbind(rownames(tax_table), tax_table), by = 1)
+ogu.markers <- ogu.markers[ogu.markers$num_d_other > 0,]
+```
+
+```{r}
+#| include: false
+songbird_Frankel_2017 <- read.csv("data/songbird/Frankel_2017/differentials.tsv", sep = "\t")
+songbird_Gopalakrishnan_2019 <- read.csv("data/songbird/Gopalakrishnan_2019/differentials.tsv", sep = "\t")
+songbird_Matson_2019 <- read.csv("data/songbird/Matson_2019/differentials.tsv", sep = "\t")
+
+songbird_Spencer_2021 <- read.csv("data/songbird/Spencer_2021/differentials.tsv", sep = "\t")
+songbird_Lee_2022 <- read.csv("data/songbird/Lee_2022/differentials.tsv", sep = "\t")
+
+songbird_Liu_2022 <- read.csv("data/songbird/Liu_2022/differentials.tsv", sep = "\t")
+songbird_McCulloch_2022 <- read.csv("data/songbird/McCulloch_2022/differentials.tsv", sep = "\t")
+songbird_Peng_2020 <- read.csv("data/songbird/Peng_2020/differentials.tsv", sep = "\t")
+songbird_Tsakmaklis_2023 <- read.csv("data/songbird/Tsakmaklis_2023/differentials.tsv", sep = "\t")
+songbird_Gunjur_2024 <- read.csv("data/songbird/Gunjur_2024/differentials.tsv", sep = "\t")
+songbird_Heshiki_2020 <- read.csv("data/songbird/Heshiki_2020/differentials.tsv", sep = "\t")
+```
+
+```{r}
+#| include: false
+songbird_coef <- rbind(songbird_Frankel_2017, songbird_Gopalakrishnan_2019, songbird_Matson_2019,
+      songbird_Spencer_2021, songbird_Lee_2022, songbird_Liu_2022, songbird_McCulloch_2022,
+      songbird_Peng_2020, songbird_Tsakmaklis_2023, songbird_Gunjur_2024, songbird_Heshiki_2020)
+
+songbird_coef <- songbird_coef %>% group_by(featureid) %>% summarise(mean = mean(response.T.R.), sd = sd(response.T.R.))
+songbird_coef <- as.data.frame(songbird_coef)
+
+ogu.markers <- merge(ogu.markers, songbird_coef, by = 1)
+ogu.markers <- ogu.markers[order(ogu.markers$num_datasets, decreasing = T),]
+rownames(ogu.markers) <- 1:nrow(ogu.markers)
+```
+
+```{r}
+#| include: false
+body_site <- read.csv("data/body_ogu.tsv", sep = "\t")[-2]
+colnames(body_site)[2] <- "site"
+body_site$genome <- sub(".fa", "", body_site$genome)
+
+food <- read.csv("data/food_ogu.txt", sep = "\t", header = F)
+colnames(food) <- "genome"
+food$site <- "food"
+food$genome <- sub(".fa", "", food$genome)
+
+pathogens <- read.csv("data/pathogens_clusters.tsv", sep = "\t", header = T)
+```
+
+```{r}
+#| include: false
+#| warning: false
+CAZy <- read.csv("data/CAZy.tsv", sep = "\t")
+KEGG <- read.csv("data/KEGG.tsv", sep = "\t")
+
+CAZy_sets <- read.csv("data/CAZy-sets.tsv", sep = "\t")
+KEGG_sets <- read.csv("data/KEGG-sets.tsv", sep = "\t")
+```
+
+# Materials and methods
+## Collection data
+<p style="text-align: justify;">
+To create a comprehensive data resource for characterizing the gut microbial diversity in melanoma patients undergoing immunotherapy, we reconstructed a catalog of metagenome-assembled genomes (MAGs) from 976 stool metagenomes across 14 public studies. This collection includes ten melanoma-specific datasets alongside four datasets from other cancer types. Additionally, it incorporates metagenomic data from studies investigating fecal microbiota transplantation (FMT) in melanoma immunotherapy. The complete dataset summary is presented in Table 1.
+<p>
+
+<p style="text-align: justify;">
+The further metagenomic analysis incorporated 624 stool metagenomes obtained from 11 collected datasets excluding fecal transplant data. Patients were stratified by immunotherapy response into two groups: responders (R group, n = 362; 58.2%) and non-responders (NR group, n = 262; 41.8%). Response assessment followed RECIST 1.1 criteria, with the R group including patients showing complete response (CR), partial response (PR), or stable disease (SD) at 6-month follow-up, while the NR group comprised exclusively progressive disease (PD) cases. The study cohort received various immunotherapy regimens, including anti-PD1, anti-CTLA4, or combination therapies. Cancer type distribution revealed melanoma predominance (n = 456; 72.7%) [Frankel et al. 2017; Gopalakrishnan et al. 2018; Matson et al. 2018; Spencer et al. 2021; Lee et al. 2022; McCulloch et al. 2022; Tsakmaklis et al. 2023], followed by gastrointestinal (GI) cancers (n = 82; 13.1%) [Peng et al. 2020; Heshiki et al. 2020; Gunjur et al. 2024], non-small cell lung cancer (n = 15; 2.4%) [Liu et al. 2022; Heshiki et al. 2020], breast cancer (n = 4; 0.6%) [Heshiki et al. 2020], ovarian cancer (n = 2; 0.3%) [Heshiki et al. 2020], and other malignancies (n = 68; 10.8%) [Gunjur et al. 2024]. All samples were collected prior to treatment initiation to evaluate baseline microbiota status. The datasets are plotted on a world map as shown in Figure 1.
+<p>
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(datasets.statistic, 
+          caption = "Table 1. All datasets using in the study.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| include: false
+#| warning: false
+loc <- read_tsv('data/sum_location.tsv')
+
+loc <- loc %>% 
+  mutate(`sample number` = R + NR) %>% 
+  mutate(nud_lat = case_when(              # nudging latitude to avoid overlaps
+    dataset == 'Spencer_2021' ~ lat + 30,
+    dataset == 'Matson_2019' ~ lat + 15,
+    #dataset == 'Frankel_2017' ~ lat - 10,
+    dataset == 'Gopalakrishnan_2018' ~ lat - 15,
+    lat_lon == '51.49766788 N -0.119759159 W' ~ lat - 15,
+    lat_lon == '53.80605739 N -1.522751916 W' ~ lat + 15,
+    lat_lon == '53.22142806 N 6.574345097 E' ~ lat + 10,
+    .default = lat)) %>% 
+  mutate(nud_lon = case_when(              # nudging longititude to avoid overlaps
+    dataset == 'Spencer_2021' ~ lon - 30,
+    dataset == 'Matson_2019' ~ lon + 5,
+    #dataset == 'Frankel_2017' ~ lon - 15,
+    dataset == 'Gopalakrishnan_2018' ~ lon + 5,
+    lat_lon == '51.49766788 N -0.119759159 W' ~ lon - 25,
+    lat_lon == '53.42969912 N -2.228100629 W' ~ lon - 15,
+    lat_lon == '53.80605739 N -1.522751916 W' ~ lon + 5,
+    lat_lon == '53.22142806 N 6.574345097 E' ~ lon + 20,
+    .default = lon))
+```
+
+```{r}
+#| label: dvsdfv
+#| include: false
+sample_map <- ggplot(data = loc) +
+    borders("world", colour = "gray58", fill = "gray") +
+    # coord_cartesian(xlim = c(-180, 180), ylim = c(-55, 85)) +
+    geom_point(aes(x = nud_lon, y = nud_lat, size = `sample number`), shape = 1) +
+    scale_radius(range = c(7, 18)) +
+  geom_scatterpie(
+      aes(x = nud_lon, y = nud_lat, group = dataset, r = sqrt(`sample number`)),
+      cols = c("R", "NR"),
+      color = 'black') +
+  scale_fill_manual(values = c("R" = "#377EB8", "NR" = "#E41A1C")) +
+  geom_segment(aes(x = nud_lon, y = nud_lat, xend = lon, yend = lat), 
+               color = 'gray25', linewidth = 0.7) +
+  geom_label_repel(aes(x = nud_lon, y = nud_lat, label = dataset),
+    size = 4, direction = "both", segment.color = 'black',
+    force = 4, min.segment.length = 0.5, nudge_x = -2) +
+  labs(x = "Longitude", y = "Latitude") +
+  theme_bw()+
+    theme(
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) + 
+    theme(
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(fill = NA))
+```
+
+[Figure 2](figure/sample_map.pdf)
+```{r fig.width=15, fig.height=6}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-cap: "Figure 2. Global distribution of collected samples (n = 624) across countries using for metagenomic analysis. Circle size represents sample count per region, while color indicates the proportion of patients R - responsive (or NR - non-responsive) to immunotherapy."
+sample_map
+```
+
+## Data acquisition and preprocessing
+<p style="text-align: justify;">
+All 976 stool metagenomic samples from 14 published studies were downloaded from the NCBI/EBI databases using Kingfisher v0.4.1 [Woodcroft, 2022]. All downloaded raw reads were preprocessed with fastp (v0.23.4) [Chen et al., 2018] with following parameters "--detect_adapter_for_pe --overrepresentation_analysis --correction --dup_calc_accuracy 6 --average_qual 30", human DNA sequences were filtered with HISAT2 (v2.2.1) [Kim et al., 2019]. Quality control was performed using FastQC (v0.12.1) [Andrews et al., 2023] and MultiQC (v1.18) [Ewels et al., 2016].
+<p>
+
+## MAGs catalog assembly, taxonomic profiling and analysis
+<p style="text-align: justify;">
+Metagenomic assembly was performed using MEGAHIT v1.2.9 [Li et al., 2015], retaining contigs longer than 1000 bp. Filtered contigs were aligned to metagenomic reads using HISAT2 v2.2 [Kim et al., 2019]. Binning was conducted in two stages: (1) initial binning with MetaBAT2 v2.12.1 [Kang et al., 2019], MaxBin2 v2.2.7 [Wu et al., 2016], and Semibin2 v2.1.0 [Pan et al., 2023], followed by (2) refinement with DAS Tool v1.1.7 to improve bin quality [Sieber et al., 2018]. Bins were quality-checked with CheckM v1.2.3 [Parks et al., 2015] and dereplicated at 98% nucleotide identity using dRep v3.4.5 [Olm et al., 2017] to generate operational genomic units (OGUs) by analogy with operational taxonomic units (OTUs). Zhu et al. (2022) first introduced this term, but our approach to representing OGUs offers a key advantage: OGUs are generated directly from the analyzed data, rather than through a mapping process. This more faithfully corresponds to the core concept of the "operational unit". For the first time this approach was applied in the work of Zakharevich et. al. (2024). Taxonomic annotation of bins was performed using GTDB-Tk v2.1.1 [Chaumeil et al., 2022] with the GTDB r207 database [Parks et al., 2022]. Additional data processing utilized Samtools v1.17 [Li et al., 2009], BEDTools v2.31.0 [Quinlan et al., 2010], and BBMap v39.06 [Bushnell et al., 2014]. Finally, OGU abundance profiles were generated by mapping reads to the OGU catalog using HISAT2 v2.2, followed by processing with InStrain v1.9.0 [Olm et al., 2021].
+<p>
+
+## MaAsLin2-differented taxonomic analysis framework
+<p style="text-align: justify;">
+To identify taxa differentially associated with treatment response, we implemented a tiered analytical strategy designed to ensure robustness against dataset imbalances and confounding variables. Our cohort was characterized by a substantial imbalance between melanoma (n = 453) and other cancer types (n = 171), necessitating separate validation of markers within each subgroup. Our primary analysis employed MaAsLin2 [Mallick et al., 2021] within a mixed-effects model framework, with immunotherapy response as a fixed effect and dataset included as a random effect - a structure justified by beta-diversity analysis demonstrating dataset as a major variance component. We conducted parallel analyses across three data partitions: the full cohort (n = 624), melanoma-only subset (n = 453), and non-melanoma cancers (n = 171). To control for potential demographic confounders, we performed a secondary analysis on a restricted sample with available metadata (n = 353, included 7 datasets), incorporating gender and age as additional fixed effects while maintaining the same random effects structure. To overcome the limited statistical power of individual taxon analyses in sparse microbiome data, we employed a systems biology approach. We aggregated MaAsLin2 results using gene set enrichment analysis (GSEA) across taxonomic hierarchies with the clusterProfiler package (v4.16.0) [Xu et al., 2024], ranking features by their MaAsLin2 regression coefficients. This approach amplifies coherent biological signals by accumulating weak but consistent effects across related taxa, thereby enhancing detection of biologically meaningful patterns that might be lost in conventional single-taxon analyses. To comprehensively assess the relationship between microbial prevalence and treatment association, we conducted a correlation analysis between OGU prevalence and MaAsLin2-derived coefficients. For this specific analysis, MaAsLin2 was run without prevalence or abundance filtering (min_abundance = 0, min_prevalence = 0) to include the complete taxonomic spectrum. The association was quantified using Spearman's rank correlation, with statistical significance determined using the cor.test function in R, followed by Benjamini-Hochberg multiple testing correction via the p.adj function.
+<p>
+
+## Determination of OGUs associated with immunotherapy outcomes
+<p style="text-align: justify;">
+In this study, we intentionally deviated from conventional hypothesis-driven frameworks targeting individual microbial taxa to circumvent limitations intrinsic to metagenomic data analysis. Instead, we implemented a differential ranking approach to prioritize features based on their association strength with clinical response to immunotherapy, coupled with log-ratio transformations to quantify ecosystem-level restructuring of the gut microbiota [Morton et al., 2019]. This methodological decision was driven by the compositional nature of microbiome data, where log-ratios mitigate feature interdependencies while preserving ecological interpretability, and their inherent robustness to technical biases such as uneven Gram-negative/positive bias during DNA extraction or sequencing depth. This framework aligns with contemporary paradigms in microbiome research, where holistic community dynamics supersede isolated taxonomic signatures  [Gloor et al., 2017].
+<p>
+
+<p style="text-align: justify;">
+The identification of OGUs associated with immunotherapy outcomes followed an established analytical framework from our previous works [Olekhnovich et al., 2023; Zakharevich et al., 2024]. Differential rankings were first performed using Songbird v1.0.3 [Morton et al., 2019] to identify OGUs showing relative abundance variations between experimental groups, applying a conservative absolute differential value threshold of > 0.3. For candidate OGUs that met this criterion, we subsequently calculated log-ratio abundances according to the principle described in the works of Morton et al. (2019) and Fedarko et al. (2020). The statistical significance of the division of patients by response based on log ratios was determined through Wilcoxon rank-sum tests with alpha threshold = 0.05 implemented in the R statistical environment v4.4.2. The biomarker selection process incorporated stringent cross-validation criteria to ensure robust identification of microbial signatures. OGUs demonstrating consistent positive associations with therapeutic response across multiple datasets were retained as potential beneficial biomarkers, while any evidence of negative association with treatment outcome in any dataset resulted in automatic exclusion regardless of other positive associations. This approach enabled simultaneous identification of two clinically meaningful biomarker categories: microbial taxa positively correlated with successful immunotherapy outcomes and those associated with adverse therapeutic responses. The methodology emphasizes reproducibility through multi-dataset validation and maintains rigorous standards for biomarker qualification by requiring consistent directional effects across independent cohorts. Correlation analysis between regression coefficients and OGU prevalence was performed similarly to the analysis with MaAsLin2 regression coefficients. Additional validation of the relationship was performed through the glm package using the ranova function from the lmer package to test the influence of the dataset variable.
+<p>
+
+## Validation of OGU as a candidate marker for stratifying patients by response to immunotherapy
+<p style="text-align: justify;">
+Determined R/NR biomarkers were used to calculate log ratios, followed by statistical assessment using the lmer function from the lmerTest package v3.1.3 [Kuznetsova et al., 2017] in the R statistical environment. Model residuals were inspected for normality through visual examination. Bootstrap validation was performed using the lmeresampler package. We applied a case bootstrap approach with 1000 iterations, resampling both individual observations and groups, to generate 95% percentile confidence intervals for the fixed effects estimates. Additional testing of marker OGU included investigating the ability of calculated log ratios to separate experimental groups using logistic regression using the method of "leave-one group out" (LOGO) cross validation using the tidymodels package v1.3.0. Rahman et al. (2023) demonstrated the effectiveness of using log-ratios based log regression in machine learning models.
+<p>
+
+## Prediction origin of MAGs
+<p style="text-align: justify;">
+The presence of non-gut microbes in the stool microbiome, such as those frequently detected on the oral means, has been associated with a degradation of the gut microbiota [Liao et al., 2024]. This phenomenon frequently results in adverse outcomes, including various illnesses. The identification of non-gut microbes was conducted using published microbial metagenome-assembled genomes (MAGs) from body sites (oral, skin, vagina) [Pasolli et al., 2019] and food [Carlino et al., 2024]. The body site MAGs were retrieved from http://segatalab.cibio.unitn.it/data/Pasolli_et_al.html. A total of 9,412 genomes were selected based on specific criteria, including those from the "Body Site" category, such as the airways, nasal cavity, oral cavity, skin, and vagina. Genomes categorized in the "Age category" as "school age" (12–19 years), "adult" (19–65 years) and "senior" (65–70 years) were included in the analysis. Genomes from newborns (<1 year) or children (1–12 years) were excluded, as the gut microbiota typically reaches an adult-like phylogenetic composition by 3 years of age [Yatsunenko et al., 2012]. The selected genomes were then clustered with our reconstructed catalog via dRep v3.4.5 [Olm et al., 2017] with 95% nucleotide identity and --ignoreGenomeQuality parameter. Genomes that passed the similarity cutoff to body site MAGs were labeled from the same source. The food MAGs were obtained from https://zenodo.org/records/13285428, where the cFMD_mags.tar.gz archive contains the folder cFMD_mags_prok with prokaryotic genomes. These 10,112 MAGs were pre-clustered among themselves using dRep v3.4.5 with 95% nucleotide identity and --ignoreGenomeQuality parameter, yielding a total of 983 genomes. The subsequent source identification process was consistent with that employed for body MAGs.
+<p>
+
+## Association analysis of OGUs R/NR marker sets
+<p style="text-align: justify;">
+GSEA was used as a summarizing tool to study the statistical relationships of OGU marker sets with immunotherapy response. This analysis was implemented using the GSEA function from the clusterProfiler package (v4.16.0) [Xu et al., 2024] and examined relationships across taxonomy, gene sets, and other traits such as presence in food or body site. For this analysis, items for each trait were ranked based on the p-value multiplied by the sign of the Songbird coefficient (R/NR + k), where a negative sign indicates association with the NR group and a positive sign indicates association with the R group. GSEA analysis results were visualized using the GseaVis package v0.1.1 [Zhang et al., 2025].
+<p>
+
+## Functional annotation of OGUs marker sets
+<p style="text-align: justify;">
+Functional annotation of the OGU markers was performed using MetaCerberus v1.4.0 [Figueroa et al., 2024] against the CAZy [Drula et al., 2022] and KEGG [Kanehisa et al., 2025] databases. To identify significant functional differences between marker sets, we employed a multi-tiered statistical approach beginning with Wilcoxon rank-sum tests to compare gene abundance distributions. Subsequently, Fisher's exact tests with Benjamini-Hochberg FDR correction were applied to identify significantly enriched functional features between experimental groups. Finally, GSEA was implemented to evaluate coordinated changes at the level of CAZy enzyme classes and KEGG pathways.
+<p>
+
+## Additional analysis and visualization
+<p style="text-align: justify;">
+Functional annotation of the OGU markers was performed using MetaCerberus v1.4.0 [Figueroa et al., 2024] against the CAZy [Drula et al., 2022] and KEGG [Kanehisa et al., 2025] databases. To identify significant functional differences between marker sets, we employed a multi-tiered statistical approach beginning with Wilcoxon rank-sum tests to compare gene abundance distributions. Subsequently, Fisher's exact tests with Benjamini-Hochberg FDR correction were applied to identify significantly enriched functional features between experimental groups, with results visualized using the EnhancedVolcano package [Blighe et al., 2018]. Finally, Gene Set Enrichment Analysis (GSEA) was implemented to evaluate coordinated changes at the level of CAZy enzyme classes and KEGG pathways.
+<p>
+
+## References
+1) Woodcroft, Ben J. Kingfisher: Rapid SRA Download Tool. Version 0.4.1, 2022.
+2) Chen, Shifu, et al. "fastp: an ultra-fast all-in-one FASTQ preprocessor." Bioinformatics 34.17 (2018): i884-i890. DOI: 10.1093/bioinformatics/bty560
+3) Kim, Daehwan, et al. "Graph-based genome alignment and genotyping with HISAT2 and HISAT-genotype." Nature biotechnology 37.8 (2019): 907-915. DOI: 10.1038/s41587-019-0201-4
+4) Andrews S. FastQC: A quality control tool for high throughput sequence data. Version 0.12.1, 2023.
+5) Li, Dinghua, et al. "MEGAHIT: an ultra-fast single-node solution for large and complex metagenomics assembly via succinct de Bruijn graph." Bioinformatics 31.10 (2015): 1674-1676.
+6) Kang, Dongwan D., et al. "MetaBAT2: an adaptive binning algorithm for robust and efficient genome reconstruction from metagenome assemblies." PeerJ 7 (2019): e7359.
+7) Wu, Yu-Wei, Blake A. Simmons, and Steven W. Singer. "MaxBin 2.0: an automated binning algorithm to recover genomes from multiple metagenomic datasets." Bioinformatics 32.4 (2016): 605-607.
+8) Pan, Shaojun, Xing-Ming Zhao, and Luis Pedro Coelho. "SemiBin2: self-supervised contrastive learning leads to better MAGs for short-and long-read sequencing." Bioinformatics 39. Supplement_1 (2023): i21-i29.
+9) Sieber, C. M. K., et al. "Recovery of genomes from metagenomes via a dereplication, aggregation and scoring strategy. Nature Microbiology 3: 836–843." (2018).
+10) Parks, Donovan H., et al. "CheckM: assessing the quality of microbial genomes recovered from isolates, single cells, and metagenomes." Genome research 25.7 (2015): 1043-1055. DOI: 10.1101/gr.186072.114
+11) Olm, Matthew R., et al. "dRep: a tool for fast and accurate genomic comparisons that enables improved genome recovery from metagenomes through de-replication." The ISME journal 11.12 (2017): 2864-2868.
+12) Zhu, Qiyun, et al. "Phylogeny-aware analysis of metagenome community ecology based on matched reference genomes while bypassing taxonomy." mSystems 7.2 (2022): e00167-22. DOI: 10.1128/msystems.00167-22
+13) Zakharevich, Natalia V., et al. "Systemic metabolic depletion of gut microbiome undermines responsiveness to melanoma immunotherapy." Life Science Alliance 7.5 (2024). DOI: 10.26508/lsa.202302480
+14) Chaumeil, Pierre-Alain, et al. "GTDB-Tk v2: memory friendly classification with the genome taxonomy database." Bioinformatics  38.23 (2022): 5315-5316. DOI: 10.1093/bioinformatics/btac672
+15) Parks, Donovan H., et al. "GTDB: an ongoing census of bacterial and archaeal diversity through a phylogenetically consistent, rank normalized and complete genome-based taxonomy." Nucleic acids research  50.D1 (2022): D785-D794. DOI: 10.1093/nar/gkab776
+16) Li, Heng, et al. "The sequence alignment/map format and SAMtools." Bioinformatics  25.16 (2009): 2078-2079. DOI: 10.1093/bioinformatics/btp352
+17) Quinlan, Aaron R., and Ira M. Hall. "BEDTools: a flexible suite of utilities for comparing genomic features." Bioinformatics 26.6 (2010): 841-842. DOI: 10.1093/bioinformatics/btq033
+18) Bushnell, Brian. "BBMap: a fast, accurate, splice-aware aligner." (2014).
+19) Olm, Matthew R., et al. "inStrain profiles population microdiversity from metagenomic data and sensitively detects shared microbial strains." Nature Biotechnology 39.6 (2021): 727-736. DOI: 10.1038/s41587-020-00797-0
+20) Mallick, Himel, et al. "Multivariable association discovery in population-scale meta-omics studies." PLoS computational biology 17.11 (2021): e1009442.
+21) Liao, C., et al. "Oral bacteria relative abundance in faeces increases due to gut microbiota depletion and is linked with patient outcomes." Nature Microbiology 9 (2024): 1555–1565. DOI: 10.1038/s41564-024-01680-3
+22) Pasolli, Edoardo, et al. "Extensive unexplored human microbiome diversity revealed by over 150,000 genomes from metagenomes spanning age, geography, and lifestyle." Cell  176.3 (2019): 649-662. DOI: 10.1016/j.cell.2019.01.001
+23) Carlino, Niccolò, et al. "Unexplored microbial diversity from 2,500 food metagenomes and links with the human microbiome." Cell  187.20 (2024): 5775-5795. DOI: 10.1016/j.cell.2024.07.039
+24) Yatsunenko, Tanya, et al. "Human gut microbiome viewed across age and geography." Nature  486.7402 (2012): 222-227. DOI: 10.1038/nature11053
+25) Figueroa III, Jose L., et al. "MetaCerberus: distributed highly parallelized HMM-based processing for robust functional annotation across the tree of life." Bioinformatics 40.3 (2024): btae119. DOI: 10.1093/bioinformatics/btae119
+26) Drula, Elodie, et al. "The carbohydrate-active enzyme database: functions and literature." Nucleic acids research 50.D1 (2022): D571-D577. DOI: 10.1093/nar/gkab1045
+27) Kanehisa, Minoru, et al. "KEGG: biological systems database as a model of the real world." Nucleic Acids Research 53.D1 (2025): D672-D677. DOI: 10.1093/nar/gkae909
+28) Xu S, Hu E, Cai Y, Xie Z, Luo X, Zhan L, Tang W, Wang Q, Liu B, Wang R, Xie W, Wu T, Xie L, Yu G (2024). "Using clusterProfiler to characterize multiomics data." Nature Protocols, 19(11), 3292-3320. DOI: 10.1038/s41596-024-01020-z
+29) Zhang, Jun, et al. "GseaVis: An R Package for Enhanced Visualization of Gene Set Enrichment Analysis in Biomedicine." Med Research  (2025). DOI: 10.1002/mdr2.70000
+30) Morton, James T., et al. "Establishing microbial composition measurement standards with reference frames." Nature communications 10.1 (2019): 2719.
+31) Olekhnovich, Evgenii I., et al. "Consistent stool metagenomic biomarkers associated with the response to melanoma immunotherapy." mSystems 8.2 (2023): e01023-22. DOI: 10.1128/msystems.01023-22
+32) Fedarko, Marcus W., et al. "Visualizing ‘omic feature rankings and log-ratios using Qurro." NAR genomics and bioinformatics  2.2 (2020): lqaa023. DOI: 10.1093/nargab/lqaa023
+33) Kuznetsova, Alexandra, Per B. Brockhoff, and Rune HB Christensen. "lmerTest package: tests in linear mixed effects models." Journal of statistical software 82 (2017): 1-26.
+34) Bretz, F., Hothorn, T., & Westfall, P. (2011). Multiple comparisons using R. CRC Press.
+35) Rahman, Gibraan, et al. "BIRDMAn: A Bayesian differential abundance framework that enables robust inference of host-microbe associations." bioRxiv  (2023). DOI: 10.1101/2023.01.30.526328
+36) Wickham, H. (2016). ggplot2: Elegant graphics for data analysis  (2nd ed.). Springer-Verlag.
+37) Kassambara A (2023). ggpubr: 'ggplot2' Based Publication Ready Plots. R package version 0.6.0
+38) Rudis, Bob. hrbrthemes: Additional Themes, Theme Components and Utilities for 'ggplot2'. R package version 0.8.0, 2020.
+39) Neuwirth, Erich. RColorBrewer: ColorBrewer Palettes. R package version 1.1-3, 2022.
+40) Wickham, Hadley. stringr: Simple, Consistent Wrappers for Common String Operations. R package version 1.5.0, 2022.
+41) Allaire, J. J., et al. Quarto. Version 1.3, 2022.
+42) Xie, Yihui, Joe Cheng, and Xianying Tan. DT: A Wrapper of the JavaScript Library 'DataTables'. R package version 0.28, 2023.
+43) Sidi, Fahim. downloadthis: Implement Download Buttons in "R Markdown". R package version 1.0.0, 2023.
+44) Blighe K, S Rana, and M Lewis. 2018. "EnhancedVolcano: Publication-ready volcano plots with enhanced colouring and labeling."
+
+# Results
+## Non-redudant OGUs catalog assembly
+<p style="text-align: justify;">
+To construct a comprehensive microbial catalog for characterizing the gut microbiome of cancer patients undergoing immunotherapy, we processed and analyzed 976 stool metagenomes from multiple cohorts. The assembly pipeline yielded a high-quality, non-redundant collection of microbial genomes for downstream ecological and association analyses. Quality control and preprocessing steps were rigorously applied to ensure data reliability. Before filtering, approximately 20 billion reads (mean ± SD: 21 ± 14 million reads per sample) were retained for downstream analysis, with an average of 34 ± 16% of reads per sample removed during quality control (see Table 2 for detailed filtering statistics). This stringent filtering approach guaranteed that only high-quality sequencing data proceeded to genome assembly. The final catalog consisted of 3,816 non-redundant metagenome-assembled genomes (MAGs) exhibiting excellent quality metrics, with 91.9 ± 6.8% completeness and 2.13 ± 2.77% contamination. This genome collection adheres to the rigorous quality standards established by the Genomic Standards Consortium (GSC), comprising 2,348 high-quality (~62%) and 1,201 medium-quality (~31%) MAGs, thereby ensuring robust taxonomic classification and functional annotation. Taxonomic profiling revealed comprehensive phylogenetic diversity across the catalog. According to GTDB classifications, the collection contains 3,805 bacterial and 11 archaeal genomes distributed across 12 different phyla. The phylogenetic composition was dominated by Firmicutes (2,540 MAGs, ~67%), followed by Actinobacteria (646 MAGs, ~17%), Bacteroidetes (402 MAGs, ~11%), Proteobacteria (140 MAGs, ~4%), and other phyla (88 MAGs, ~2%). The phylogenetic relationships within this diverse collection are visualized in Figure 1, which presents the phylogenetic tree constructed from all 3,816 MAG sequences using the approximate maximum likelihood method.
+<p>
+
+<p style="text-align: justify;">
+For subsequent relative abundance profiling and differential analysis, 624 samples from 11 datasets were processed, as fecal microbiota transplantation (FMT) studies were excluded from these specific analyses to maintain cohort homogeneity. This comprehensive non-redundant catalog represents the extensive resource currently available for studying the gut microbiome in cancer immunotherapy patients and is made publicly available to enable future research by the scientific community.
+<p>
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(statistic, 
+          caption = "Table 2. Quality filtering statistic across all 976 metagenomics samples were using for OGUs catalog assembly.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(mag.statistic, 
+          caption = "Table 3. OGUs assembly statistic and taxonomic classification.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+[Figure 1](figure/catalog_picture.png)
+![Figure 1](figure/catalog_picture.png)
+Figure 1. An approximate maximum likelihood phylogenetic tree was constructed using CheckM, based on 43 amino acid (AA) marker sequences, and included 3,816 metagenome-assembled genomes (MAGs) derived from stool metagenomes of cancer patients. The branches of the tree are coloured to indicate bacterial or archaeal affiliation, while the inner ring shows phylum-level taxonomic annotations that correspond to the phylogenetic relationships. Meanwhile, the outer ring provides statistics about the assembly of the MAGs.
+
+## Taxonomy structure
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(ogu_table, 
+          caption = "Table 4. OGUs retative abundances across metagenomic samples.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+meta_data_phyloseq <- meta_data
+rownames(meta_data_phyloseq) <- meta_data_phyloseq$sampleid
+
+phy_obj <- phyloseq(otu_table(ogu_table, taxa_are_rows=FALSE), 
+                        sample_data(meta_data_phyloseq), 
+                        tax_table(as.matrix(tax_table)))
+
+phy_obj <- transform_sample_counts(phy_obj, function(x) 100 * x/sum(x))
+
+phylum_barplot <- phy_obj %>% comp_barplot("phylum", n_taxa = 10, merge_other = FALSE, label = NULL)+
+    # facet_wrap(vars(response), scales = "free", nrow = 1)+
+    theme_void()+
+    theme(legend.position = "bottom")
+```
+
+```{r fig.width=15, fig.height=5}
+#| echo: false
+download_this(
+  phylum_barplot,
+  output_name = "phylum_barplot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=15, fig.height=5}
+#| echo: false
+#| fig-cap: "Figure 2. Phylum distribution per metagenomic samples."
+phylum_barplot
+```
+
+## Alpha diversity
+<p style="text-align: justify;">
+Analysis of gut microbiome alpha diversity, as measured by the Shannon index, revealed comparable values between responders (R) and non-responders (NR) to immunotherapy. Descriptive statistics showed values of 4.13 ± 0.75 for the R group and 4.00 ± 0.75 for the NR group. Individual alpha diversity values for each sample are provided in Table 5, while the distribution of these metrics across experimental groups is visualized in Figure 3. To statistically evaluate group differences while accounting for potential confounding factors, we implemented a linear mixed-effects model. This model incorporated treatment response and cancer type as fixed effects, with dataset included as a random effect to address inter-study variation. Model quality assessment (REML criterion = 1262.7) demonstrated substantial variance attributable to dataset differences (χ² = 150.77, p < 2.2e-16), thereby justifying the mixed-effects approach. Analysis of fixed effects revealed a non-significant trend toward higher alpha diversity in the R group (β = 0.098, SE = 0.053, t(613.84) = 1.846, p = 0.065). Cancer type showed no significant effect on alpha diversity (β = -0.196, SE = 0.291, t(9.36) = -0.673, p = 0.517). The effect size for response group differences was small (Cohen's d = 0.16, 95% CI [0.00, 0.32]). Diagnostic examination of model residuals confirmed adherence to statistical assumptions, including approximate normal distribution. These results indicate the absence of statistically significant differences in alpha diversity between responders and non-responders to immunotherapy, though a weak trend toward greater diversity was observed in the responder group. This finding suggests that alpha diversity, as a standalone metric, does not show a strong association with treatment outcome in this cohort, and that the underlying ecological dynamics determining response are likely more complex than what is captured by this measure.
+<p style="text-align: justify;">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+df.alpha <- vegan::diversity(ogu_table, index = "shannon")
+df.alpha <- as.data.frame(df.alpha)
+colnames(df.alpha) <- "shannon"
+
+df.alpha <- merge(meta_data, cbind(sampleid = rownames(df.alpha), df.alpha), by = 1)
+
+lmer.alpha <- lmer(shannon ~ response + cancer_type + (1|dataset), data = df.alpha)
+
+alpha_plot <- ggplot(df.alpha, aes(shannon, response, col = response))+
+      stat_halfeye()+
+      xlab("Shannon index")+
+      ylab("Response")+
+      theme_pubr()+
+      theme(legend.position = "none")+
+      scale_color_brewer(palette = "Set1")
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(df.alpha, 
+          caption = "Table 5. Alpha diversity results across datasets.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.width=4.5, fig.height=4}
+#| echo: false
+download_this(
+  alpha_plot,
+  output_name = "alpha_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=4.5, fig.height=4}
+#| echo: false
+#| fig-cap: "Figure 3. Shannon index across experomental groups."
+alpha_plot
+```
+
+#### LLM results
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+summary(lmer.alpha)
+```
+
+#### Random effect testing
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+ranova(lmer.alpha)
+```
+
+#### Effect size
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+cohens_d(shannon ~ response, data = df.alpha)
+```
+
+#### Residuals of model normality testing
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+alpha_residuals_plot <- qplot(residuals(lmer.alpha)) + theme_bw() + xlab("Residuals") + ylab("Density")
+```
+
+```{r fig.height=4, fig.width=5}
+#| echo: false
+#| message: false
+#| warning: false
+download_this(
+  alpha_residuals_plot,
+  output_name = "logratio_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.height=4, fig.width=5}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-cap: "Figure 4. Normality and homoscedasticity assessment of linear mixed models for alpha diversity using residual diagnostics."
+alpha_residuals_plot
+```
+
+## Beta diversity
+<p style="text-align: justify;">
+To evaluate the association between gut microbiome composition and response to immune checkpoint inhibitor therapy, we performed a multivariate analysis of community structure using permutational analysis of variance (PERMANOVA). The analysis revealed that inter-study heterogeneity was a dominant source of variation, with significant dispersion differences observed across datasets (F = 4.41, p < 0.001) and cancer types (F = 14.88, p < 0.001). In contrast, no significant difference in dispersion was detected between responder groups (F = 0.04, p = 0.84), supporting the validity of subsequent comparisons. After stratifying by dataset to account for study-specific effects, we found a statistically significant, though modest, association between baseline microbiome structure and treatment response (F = 1.38, p = 0.049, R² = 0.002). As visualized in the ordination space, samples clustered predominantly by dataset of origin (Figure 5), while a weaker, yet distinct, grouping by therapeutic response was also observable (Figure 6). Collectively, these findings demonstrate that while technical and cohort-specific factors explain the majority of microbiome variability, a consistent and detectable taxonomic signature is associated with clinical outcome to immunotherapy.
+<p style="text-align: justify;">
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+colors_var <- c(brewer.pal(n = 9, name = "Set1")[-6], "magenta4", "olivedrab", "aquamarine4", "wheat4")
+
+mds <- metaMDS(ogu_table, distance = "bray")
+mds.points <- as.data.frame(mds$points)
+
+mds.points.meta <- merge(meta_data, cbind(sampleid = rownames(mds.points), mds.points), by = 1)
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+gg <- data.frame(cluster=factor(mds.points.meta$dataset), 
+                 x = mds.points.meta$MDS1, y = mds.points.meta$MDS2)
+centroids <- aggregate(cbind(x, y) ~ cluster, data = gg, mean)
+gg <- merge(gg, centroids, by="cluster", suffixes= c("",".centroid"))
+colnames(gg)[1] <- "Dataset"
+
+bray_dataset_plot <- ggplot(gg) +
+    geom_point(aes(x = x, y = y, color = Dataset), size = 1.75, alpha = 0.55) +
+    geom_segment(aes(x = x.centroid, y = y.centroid, xend = x, yend = y, color = Dataset),
+                 alpha = 0.55)+
+    geom_text_repel(data = centroids, aes(x, y, label = cluster), size = 5)+
+    scale_color_manual(values = colors_var)+
+    theme_bw()+
+    theme(legend.position = "none")+
+    theme(axis.text.x = element_text(size = 12, colour = "black"), 
+          axis.title.y = element_text(size = 12), axis.title.x = element_text(size = 12), legend.title = element_text(size = 12), 
+          legend.text = element_text(size = 12, colour = "black"), strip.text.x = element_text(size = 12),
+          axis.text.y = element_text(colour = "black", size = 12), title = element_text(size = 12))+
+    xlab("NMDS1")+
+    ylab('NMDS2')
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+gg_2 <- data.frame(cluster=factor(mds.points.meta$response), 
+                 x = mds.points.meta$MDS1, y = mds.points.meta$MDS2)
+centroids_2 <- aggregate(cbind(x, y) ~ cluster, data=gg_2, mean)
+gg_2 <- merge(gg_2, centroids_2, by="cluster", suffixes=c("",".centroid"))
+colnames(gg_2)[1] <- "Response"
+
+bray_response_plot <- ggplot(gg_2) +
+    geom_point(aes(x = x, y = y, color = Response), size = 1.75, alpha = 0.55) +
+    geom_segment(aes(x = x.centroid, y = y.centroid, xend = x, yend = y, color = Response),
+                 alpha = 0.55)+
+    geom_text_repel(data = centroids_2, aes(x,y, label = cluster), size = 5)+
+    scale_color_manual(values = brewer.pal(n = 3, name = "Set1")[c(3,2)])+
+    theme_bw()+
+    theme(legend.position = "none")+
+    theme(axis.text.x = element_text(size = 12, colour = "black"), 
+          axis.title.y = element_text(size = 12), axis.title.x = element_text(size = 12), legend.title = element_text(size = 12), 
+          legend.text = element_text(size = 12, colour = "black"), strip.text.x = element_text(size = 12),
+          axis.text.y = element_text(colour = "black", size = 12), title = element_text(size = 12))+
+    xlab("NMDS1")+
+    ylab('NMDS2')
+```
+
+```{r fig.width=5, fig.height=5}
+#| echo: false
+download_this(
+  bray_dataset_plot,
+  output_name = "bray_dataset_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.height=5, fig.width=5}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-cap: "Figure 5. NMDS dataset - Bray-Curtis."
+bray_dataset_plot
+```
+
+```{r fig.width=5, fig.height=5}
+#| echo: false
+download_this(
+  bray_response_plot,
+  output_name = "bray_response_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=5, fig.height=5}
+#| echo: false
+#| fig-cap: Figure 6. NMDS response - Bray-Curtis.
+bray_response_plot
+```
+
+### PERMANOVA
+#### Homogeneity of groups dispersions - dataset
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+disp.dataset <- betadisper(vegdist(ogu_table, method = "bray"), meta_data$dataset)
+anova(disp.dataset)
+```
+
+#### Homogeneity of groups dispersions - cancer_type
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+disp.cancer_type <- betadisper(vegdist(ogu_table, method = "bray"), meta_data$cancer_type)
+anova(disp.cancer_type)
+```
+
+#### Homogeneity of groups dispersions - response
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+disp.response <- betadisper(vegdist(ogu_table, method = "bray"), meta_data$response)
+anova(disp.response)
+```
+
+#### Results
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+set.seed(0)
+adonis2(ogu_table ~ response, 
+        data = meta_data, 
+        permutations = 9999, 
+        method = "bray", 
+        strata = meta_data$dataset,
+        by = "margin")
+```
+
+## Maaslin2 differential abundance analysis
+<p style="text-align: justify;">
+To identify microbial taxa associated with response to immunotherapy, we performed a differential abundance analysis using a mixed-effects model approach implemented in MaAsLin2.
+<p>
+
+<p style="text-align: justify;">
+The most robust signal was the genus *Fusicatenibacter*, and specifically the species *Fusicatenibacter saccharivorans*, which was significantly enriched in responders across all cohorts and remained significant after adjusting for sex and age. This positions it as a strong, pan-cancer microbial biomarker. In contrast, other well-known beneficial taxa exhibited context-dependent associations. The genus *Blautia* and its species *Blautia wexlerae* were consistently associated with a positive outcome specifically in the melanoma cohort. Similarly, *Faecalibacterium* and *Faecalibacterium prausnitzii* were significant markers in melanoma, but this association did not persist in the "other cancers" cohort after covariate adjustment.
+<p>
+
+<p style="text-align: justify;">
+Conversely, the gut microbiome in NR group was characterized by a distinct and reproducible shift toward a dysbiotic state. A key finding was the consistent enrichment of Proteobacteria across all cohorts, a phylum frequently linked to intestinal inflammation and ecosystem instability. Furthermore, *Bacteroidota* was frequently elevated in NR, particularly in melanoma-specific and covariate-adjusted analyses. This NR-associated signature was defined at the genus level by *Bacteroides*, *Alistipes*, and *Parabacteroides* in melanoma, and notably, by the recurrent species *Parasutterella excrementihominis*, which emerged as a robust, pan-cancer microbial marker for non-response.
+<p>
+
+<p style="text-align: justify;">
+While the core signatures were largely stable, we observed nuanced shifts depending on cancer type and statistical modeling. The genus *Gemmiger* presented a complex picture: it was associated with the NR group in the unadjusted melanoma analysis but shifted to the R group in the covariate-adjusted analysis of the Other cancers cohort. Its species-level representative, *Gemmiger qucibialis*, was also identified in both contexts (NR in adjusted melanoma; R in adjusted other cancers).
+<p>
+
+<p style="text-align: justify;">
+The differential abundance analysis, performed using MaAsLin2, is summarized in Tables 4-9. Subsequent enrichment analysis yielded the results detailed in Tables 10-27. Furthermore, the key findings from the enrichment analysis are illustrated in Figures 7-9.
+<p>
+
+### Maaslin2 - all without metadata (n = 624)
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+meta_data_phyloseq <- meta_data
+rownames(meta_data_phyloseq) <- meta_data_phyloseq$sampleid
+
+# Maaslin2(input_data = ogu_table,
+#          input_metadata = as.data.frame(t(meta_data_phyloseq[-1])),
+#          output = "results/1.Maaslin2_all_without_metadata",
+#          random_effects = "dataset",
+#          fixed_effects = c("response", "cancer_type"),
+#          plot_heatmap = F,
+#          save_scatter = F)
+
+maaslin2.results <- read.csv("results/1.Maaslin2_all_without_metadata/all_results.tsv", sep = "\t")
+
+maaslin2.result.sbs <- maaslin2.results[maaslin2.results$qval < 0.25,]
+maaslin2.result.sbs <- merge(cbind(featureid = rownames(taxonomy), taxonomy), maaslin2.result.sbs, by = 1)
+maaslin2.result.sbs <- maaslin2.result.sbs[order(maaslin2.result.sbs$coef, decreasing = T),]
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+rownames(maaslin2.result.sbs) <- 1:nrow(maaslin2.result.sbs)
+
+datatable(maaslin2.result.sbs, 
+          caption = "Table 4. Maaslin2 results - all without metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+### Maaslin2 - melanoma without metadata (n = 453)
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+ogu_table.2 <- ogu_table[rownames(ogu_table) %in% meta_data$sampleid[meta_data$cancer_type == "Melanoma"],]
+ogu_table.2 <- ogu_table.2[colSums(ogu_table.2) > 0]
+
+meta_data_v2 <- meta_data[meta_data$sampleid %in% rownames(ogu_table.2),]
+meta_data_v2.sort <- meta_data_v2[match(rownames(ogu_table.2), meta_data_v2$sampleid),]
+
+meta_data_v2_phyloseq <- meta_data_v2
+rownames(meta_data_v2_phyloseq) <- meta_data_v2_phyloseq$sampleid
+
+# Maaslin2(input_data = ogu_table.2,
+#          input_metadata = as.data.frame(t(meta_data_v2_phyloseq[-1])),
+#          output = "results/2.Maaslin2_melanoma_without_metadata",
+#          random_effects = "dataset",
+#          fixed_effects = "response",
+#          plot_heatmap = F,
+#          save_scatter = F)
+
+maaslin2.results.2 <- read.csv("results/2.Maaslin2_melanoma_without_metadata/all_results.tsv", sep = "\t")
+
+maaslin2.results.2.sbs <- maaslin2.results.2[maaslin2.results.2$qval < 0.25,]
+maaslin2.results.2.sbs <- merge(cbind(featureid = rownames(taxonomy), taxonomy), maaslin2.results.2.sbs, by = 1)
+maaslin2.results.2.sbs <- maaslin2.results.2.sbs[order(maaslin2.results.2.sbs$coef, decreasing = T),]
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(maaslin2.results.2.sbs, 
+          caption = "Table 5. Maaslin2 results - melanoma without metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+### Maaslin2 - other cancer types without metadata (n = 171)
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+ogu_table.3 <- ogu_table[rownames(ogu_table) %in% meta_data$sampleid[meta_data$cancer_type != "Melanoma"],]
+ogu_table.3 <- ogu_table.3[colSums(ogu_table.3) > 0]
+
+meta_data_v3 <- meta_data[meta_data$sampleid %in% rownames(ogu_table.3),]
+meta_data_v3.sort <- meta_data_v3[match(rownames(ogu_table.3), meta_data_v3$sampleid),]
+
+meta_data_v3_phyloseq <- meta_data_v3
+rownames(meta_data_v3_phyloseq) <- meta_data_v3_phyloseq$sampleid
+
+# Maaslin2(input_data = ogu_table.3,
+#          input_metadata = as.data.frame(t(meta_data_v3_phyloseq[-1])),
+#          output = "results/3.Maaslin2_other_cancer_types_without_metadata",
+#          random_effects = "dataset",
+#          fixed_effects = "response",
+#          plot_heatmap = F,
+#          save_scatter = F)
+
+maaslin2.results.3 <- read.csv("results/3.Maaslin2_other_cancer_types_without_metadata/all_results.tsv", sep = "\t")
+
+maaslin2.results.3.sbs <- maaslin2.results.3[maaslin2.results.3$qval < 0.25,]
+maaslin2.results.3.sbs <- merge(cbind(featureid = rownames(taxonomy), taxonomy), maaslin2.results.3.sbs, by = 1)
+maaslin2.results.3.sbs <- maaslin2.results.3.sbs[order(maaslin2.results.3.sbs$coef, decreasing = T),]
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(maaslin2.results.3.sbs, 
+          caption = "Table 6. Maaslin2 results - other cancer types without metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+### Maaslin2 - all with metadata (n = 352)
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+ogu_table.4 <- ogu_table[rownames(ogu_table) %in% meta_data_2$sampleid,]
+ogu_table.4 <- ogu_table.4[colSums(ogu_table.4) > 0]
+
+meta_data_v4.sort <- meta_data_2[match(rownames(ogu_table.4), meta_data_2$sampleid),]
+
+meta_data_v4_phyloseq <- meta_data_2
+rownames(meta_data_v4_phyloseq) <- meta_data_v4_phyloseq$sampleid
+
+# Maaslin2(input_data = ogu_table.4,
+#          input_metadata = as.data.frame(t(meta_data_v4_phyloseq[-1])),
+#          output = "results/4.Maaslin2_all_with_metadata",
+#          random_effects = "dataset",
+#          fixed_effects = c("age", "gender", "cancer_type", "response"),
+#          plot_heatmap = F,
+#          save_scatter = F)
+
+maaslin2.results.4 <- read.csv("results/4.Maaslin2_all_with_metadata/all_results.tsv", sep = "\t")
+
+maaslin2.results.4.sbs <- maaslin2.results.4[maaslin2.results.4$qval < 0.25,]
+maaslin2.results.4.sbs <- merge(cbind(featureid = rownames(taxonomy), taxonomy), maaslin2.results.4.sbs, by = 1)
+maaslin2.results.4.sbs <- maaslin2.results.4.sbs[order(maaslin2.results.4.sbs$coef, decreasing = T),]
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+rownames(maaslin2.results.4.sbs) <- 1:nrow(maaslin2.results.4.sbs)
+
+datatable(maaslin2.results.4.sbs, 
+          caption = "Table 7. Maaslin2 results - all with metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+### Maaslin2 - melanoma with metadata (n = 221)
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+ogu_table.5 <- ogu_table[rownames(ogu_table) %in% meta_data_2$sampleid[meta_data_2$cancer_type == "Melanoma"],]
+ogu_table.5 <- ogu_table.5[colSums(ogu_table.5) > 0]
+
+meta_data_v5 <- meta_data_2[meta_data_2$sampleid %in% rownames(ogu_table.5),]
+meta_data_v5.sort <- meta_data_v5[match(rownames(ogu_table.5), meta_data_v5$sampleid),]
+
+meta_data_v5_phyloseq <- meta_data_v5
+rownames(meta_data_v5_phyloseq) <- meta_data_v5_phyloseq$sampleid
+
+# Maaslin2(input_data = ogu_table.5,
+#          input_metadata = as.data.frame(t(meta_data_v5_phyloseq[-1])),
+#          output = "results/5.Maaslin2_melanoma_with_metadata",
+#          random_effects = "dataset",
+#          fixed_effects = c("age", "gender", "response"),
+#          plot_heatmap = F,
+#          save_scatter = F)
+
+maaslin2.results.5 <- read.csv("results/5.Maaslin2_melanoma_with_metadata/all_results.tsv", sep = "\t")
+
+maaslin2.results.5.sbs <- maaslin2.results.5[maaslin2.results.5$qval < 0.25,]
+maaslin2.results.5.sbs <- merge(cbind(featureid = rownames(taxonomy), taxonomy), maaslin2.results.5.sbs, by = 1)
+maaslin2.results.5.sbs <- maaslin2.results.5.sbs[order(maaslin2.results.5.sbs$coef, decreasing = T),]
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+rownames(maaslin2.results.5.sbs) <- 1:nrow(maaslin2.results.5.sbs)
+
+datatable(maaslin2.results.5.sbs, 
+          caption = "Table 8. Maaslin2 results - melanoma with metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+### Maaslin2 - other cancer types with metadata (n = 131)
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+ogu_table.6 <- ogu_table[rownames(ogu_table) %in% meta_data_2$sampleid[meta_data_2$cancer_type != "Melanoma"],]
+ogu_table.6 <- ogu_table.6[colSums(ogu_table.6) > 0]
+
+meta_data_v6 <- meta_data_2[meta_data_2$sampleid %in% rownames(ogu_table.6),]
+meta_data_v6.sort <- meta_data_v6[match(rownames(ogu_table.6), meta_data_v6$sampleid),]
+
+meta_data_v6_phyloseq <- meta_data_v6
+rownames(meta_data_v6_phyloseq) <- meta_data_v6_phyloseq$sampleid
+
+# Maaslin2(input_data = ogu_table.6,
+#          input_metadata = as.data.frame(t(meta_data_v6_phyloseq[-1])),
+#          output = "results/6.Maaslin2_other_cancer_types_with_metadata",
+#          random_effects = "dataset",
+#          fixed_effects = c("age", "gender", "response"),
+#          plot_heatmap = F,
+#          save_scatter = F)
+
+maaslin2.results.6 <- read.csv("results/6.Maaslin2_other_cancer_types_with_metadata/all_results.tsv", sep = "\t")
+
+maaslin2.results.6.sbs <- maaslin2.results.6[maaslin2.results.6$qval < 0.25,]
+maaslin2.results.6.sbs <- merge(cbind(featureid = rownames(taxonomy), taxonomy), maaslin2.results.6.sbs, by = 1)
+maaslin2.results.6.sbs <- maaslin2.results.6.sbs[order(maaslin2.results.6.sbs$coef, decreasing = T),]
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+rownames(maaslin2.results.6.sbs) <- 1:nrow(maaslin2.results.6.sbs)
+
+datatable(maaslin2.results.6.sbs, 
+          caption = "Table 9. Maaslin2 results - other cancer types with metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| include: false
+TERM2GENE.phylum <- cbind(tax_table[2], featureid = rownames(tax_table))
+TERM2GENE.genus <- cbind(tax_table[6], featureid = rownames(tax_table))
+TERM2GENE.species <- cbind(tax_table[7], featureid = rownames(tax_table))
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+get_vec <- function(df){
+      maaslin.vec <- df$coef
+      names(maaslin.vec) <- df$feature
+      maaslin.vec <- sort(maaslin.vec, decreasing = T)
+      
+      return(maaslin.vec)
+}
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+maaslin2.results.response <- maaslin2.results[maaslin2.results$metadata == "response",]
+
+maaslin.vec <- get_vec(maaslin2.results.response)
+
+maaslin_v1_phylum <- GSEA(maaslin.vec, TERM2GENE = TERM2GENE.phylum, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+maaslin_v1_genus <- GSEA(maaslin.vec, TERM2GENE = TERM2GENE.genus, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+maaslin_v1_species <- GSEA(maaslin.vec, TERM2GENE = TERM2GENE.species, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+
+maaslin_v1_phylum.df <- as.data.frame(maaslin_v1_phylum)
+maaslin_v1_genus.df <- as.data.frame(maaslin_v1_genus)
+maaslin_v1_species.df <- as.data.frame(maaslin_v1_species)
+```
+
+## Gene set enrichment analysis using all Maaslin2 results
+#### Maaslin2 - all without metadata
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+maaslin2.results.response <- maaslin2.results[maaslin2.results$metadata == "response",]
+
+maaslin.vec <- get_vec(maaslin2.results.response)
+
+maaslin_v1_phylum <- GSEA(maaslin.vec, TERM2GENE = TERM2GENE.phylum, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+maaslin_v1_genus <- GSEA(maaslin.vec, TERM2GENE = TERM2GENE.genus, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+maaslin_v1_species <- GSEA(maaslin.vec, TERM2GENE = TERM2GENE.species, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+
+maaslin_v1_phylum.df <- as.data.frame(maaslin_v1_phylum)
+maaslin_v1_genus.df <- as.data.frame(maaslin_v1_genus)
+maaslin_v1_species.df <- as.data.frame(maaslin_v1_species)
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v1_phylum.df.sbs <- maaslin_v1_phylum.df[-c(1,10,11)]
+maaslin_v1_phylum.df.sbs <- maaslin_v1_phylum.df.sbs[order(maaslin_v1_phylum.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v1_phylum.df.sbs) <- 1:nrow(maaslin_v1_phylum.df.sbs)
+
+datatable(maaslin_v1_phylum.df.sbs, 
+          caption = "Table 10. Maaslin2 GSEA phylum - all without metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v1_genus.df.sbs <- maaslin_v1_genus.df[-c(1,10,11)]
+maaslin_v1_genus.df.sbs <- maaslin_v1_genus.df.sbs[order(maaslin_v1_genus.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v1_genus.df.sbs) <- 1:nrow(maaslin_v1_genus.df.sbs)
+
+datatable(maaslin_v1_genus.df.sbs, 
+          caption = "Table 11. Maaslin2 GSEA genus - all without metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v1_species.df.sbs <- maaslin_v1_species.df[-c(1,10,11)]
+maaslin_v1_species.df.sbs <- maaslin_v1_species.df.sbs[order(maaslin_v1_species.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v1_species.df.sbs) <- 1:nrow(maaslin_v1_species.df.sbs)
+
+datatable(maaslin_v1_species.df.sbs, 
+          caption = "Table 12. Maaslin2 GSEA species - all without metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+#### Maaslin2 - melanoma without metadata
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+maaslin2.results.2.response <- maaslin2.results.2[maaslin2.results.2$metadata == "response",]
+
+maaslin.vec.2 <- get_vec(maaslin2.results.2.response)
+
+maaslin_v2_phylum <- GSEA(maaslin.vec.2, TERM2GENE = TERM2GENE.phylum, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+maaslin_v2_genus <- GSEA(maaslin.vec.2, TERM2GENE = TERM2GENE.genus, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+maaslin_v2_species <- GSEA(maaslin.vec.2, TERM2GENE = TERM2GENE.species, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+
+maaslin_v2_phylum.df <- as.data.frame(maaslin_v2_phylum)
+maaslin_v2_genus.df <- as.data.frame(maaslin_v2_genus)
+maaslin_v2_species.df <- as.data.frame(maaslin_v2_species)
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v2_phylum.df.sbs <- maaslin_v2_phylum.df[-c(1,10,11)]
+maaslin_v2_phylum.df.sbs <- maaslin_v2_phylum.df.sbs[order(maaslin_v2_phylum.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v2_phylum.df.sbs) <- 1:nrow(maaslin_v2_phylum.df.sbs)
+
+datatable(maaslin_v2_phylum.df.sbs, 
+          caption = "Table 13. Maaslin2 GSEA genus - melanoma without metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v2_genus.df.sbs <- maaslin_v2_genus.df[-c(1,10,11)]
+maaslin_v2_genus.df.sbs <- maaslin_v2_genus.df.sbs[order(maaslin_v2_genus.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v2_genus.df.sbs) <- 1:nrow(maaslin_v2_genus.df.sbs)
+
+datatable(maaslin_v2_genus.df.sbs, 
+          caption = "Table 14. Maaslin2 GSEA genus - melanoma without metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v2_species.df.sbs <- maaslin_v2_species.df[-c(1,10,11)]
+maaslin_v2_species.df.sbs <- maaslin_v2_species.df.sbs[order(maaslin_v2_species.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v2_species.df.sbs) <- 1:nrow(maaslin_v2_species.df.sbs)
+
+datatable(maaslin_v2_species.df.sbs, 
+          caption = "Table 15. Maaslin2 GSEA species - melanoma without metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+#### Maaslin2 - other cancer types without metadata
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+maaslin2.results.3.response <- maaslin2.results.3[maaslin2.results.3$metadata == "response",]
+
+maaslin.vec.3 <- get_vec(maaslin2.results.3.response)
+
+maaslin_v3_phylum <- GSEA(maaslin.vec.3, TERM2GENE = TERM2GENE.phylum, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+maaslin_v3_genus <- GSEA(maaslin.vec.3, TERM2GENE = TERM2GENE.genus, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+maaslin_v3_species <- GSEA(maaslin.vec.3, TERM2GENE = TERM2GENE.species, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+
+maaslin_v3_phylum.df <- as.data.frame(maaslin_v3_phylum)
+maaslin_v3_genus.df <- as.data.frame(maaslin_v3_genus)
+maaslin_v3_species.df <- as.data.frame(maaslin_v3_species)
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v3_phylum.df.sbs <- maaslin_v3_phylum.df[-c(1,10,11)]
+maaslin_v3_phylum.df.sbs <- maaslin_v3_phylum.df.sbs[order(maaslin_v3_phylum.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v3_phylum.df.sbs) <- 1:nrow(maaslin_v3_phylum.df.sbs)
+
+datatable(maaslin_v3_phylum.df.sbs, 
+          caption = "Table 16. Maaslin2 GSEA phylum - other cancer types without metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v3_genus.df.sbs <- maaslin_v3_genus.df[-c(1,10,11)]
+maaslin_v3_genus.df.sbs <- maaslin_v3_genus.df.sbs[order(maaslin_v3_genus.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v3_genus.df.sbs) <- 1:nrow(maaslin_v3_genus.df.sbs)
+
+datatable(maaslin_v3_genus.df.sbs, 
+          caption = "Table 17. Maaslin2 GSEA genus - other cancer types without metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v3_species.df.sbs <- maaslin_v3_species.df[-c(1,10,11)]
+maaslin_v3_species.df.sbs <- maaslin_v3_species.df.sbs[order(maaslin_v3_species.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v3_species.df.sbs) <- 1:nrow(maaslin_v3_species.df.sbs)
+
+datatable(maaslin_v3_species.df.sbs, 
+          caption = "Table 18. Maaslin2 GSEA species - other cancer types without metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+#### Maaslin2 - all with metadata
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+maaslin2.results.4.response <- maaslin2.results.4[maaslin2.results.4$metadata == "response",]
+
+maaslin.vec.4 <- get_vec(maaslin2.results.4.response)
+
+maaslin_v4_phylum <- GSEA(maaslin.vec.4, TERM2GENE = TERM2GENE.phylum, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+maaslin_v4_genus <- GSEA(maaslin.vec.4, TERM2GENE = TERM2GENE.genus, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+maaslin_v4_species <- GSEA(maaslin.vec.4, TERM2GENE = TERM2GENE.species, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+
+maaslin_v4_phylum.df <- as.data.frame(maaslin_v4_phylum)
+maaslin_v4_genus.df <- as.data.frame(maaslin_v4_genus)
+maaslin_v4_species.df <- as.data.frame(maaslin_v4_species)
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v4_phylum.df.sbs <- maaslin_v4_phylum.df[-c(1,10,11)]
+maaslin_v4_phylum.df.sbs <- maaslin_v4_phylum.df.sbs[order(maaslin_v4_phylum.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v4_phylum.df.sbs) <- 1:nrow(maaslin_v4_phylum.df.sbs)
+
+datatable(maaslin_v4_phylum.df.sbs, 
+          caption = "Table 19. Maaslin2 GSEA phylum - all with metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v4_genus.df.sbs <- maaslin_v4_genus.df[-c(1,10,11)]
+maaslin_v4_genus.df.sbs <- maaslin_v4_genus.df.sbs[order(maaslin_v4_genus.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v4_genus.df.sbs) <- 1:nrow(maaslin_v4_genus.df.sbs)
+
+datatable(maaslin_v4_genus.df.sbs, 
+          caption = "Table 20. Maaslin2 GSEA genus - all with metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v4_species.df.sbs <- maaslin_v4_species.df[-c(1,10,11)]
+maaslin_v4_species.df.sbs <- maaslin_v4_species.df.sbs[order(maaslin_v4_species.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v4_species.df.sbs) <- 1:nrow(maaslin_v4_species.df.sbs)
+
+datatable(maaslin_v4_species.df.sbs, 
+          caption = "Table 21. Maaslin2 GSEA species - all with metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+#### Maaslin2 - melanoma with metadata
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+maaslin2.results.5.response <- maaslin2.results.5[maaslin2.results.5$metadata == "response",]
+
+maaslin.vec.5 <- get_vec(maaslin2.results.5.response)
+
+maaslin_v5_phylum <- GSEA(maaslin.vec.5, TERM2GENE = TERM2GENE.phylum, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+maaslin_v5_genus <- GSEA(maaslin.vec.5, TERM2GENE = TERM2GENE.genus, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+maaslin_v5_species <- GSEA(maaslin.vec.5, TERM2GENE = TERM2GENE.species, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+
+maaslin_v5_phylum.df <- as.data.frame(maaslin_v5_phylum)
+maaslin_v5_genus.df <- as.data.frame(maaslin_v5_genus)
+maaslin_v5_species.df <- as.data.frame(maaslin_v5_species)
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v5_phylum.df.sbs <- maaslin_v5_phylum.df[-c(1,10,11)]
+maaslin_v5_phylum.df.sbs <- maaslin_v5_phylum.df.sbs[order(maaslin_v5_phylum.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v5_phylum.df.sbs) <- 1:nrow(maaslin_v5_phylum.df.sbs)
+
+datatable(maaslin_v5_phylum.df.sbs, 
+          caption = "Table 22. Maaslin2 GSEA phylum - melanoma with metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v5_genus.df.sbs <- maaslin_v5_genus.df[-c(1,10,11)]
+maaslin_v5_genus.df.sbs <- maaslin_v5_genus.df.sbs[order(maaslin_v5_genus.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v5_genus.df.sbs) <- 1:nrow(maaslin_v5_genus.df.sbs)
+
+datatable(maaslin_v5_genus.df.sbs, 
+          caption = "Table 23. Maaslin2 GSEA genus - melanoma with metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v5_species.df.sbs <- maaslin_v5_species.df[-c(1,10,11)]
+maaslin_v5_species.df.sbs <- maaslin_v5_species.df.sbs[order(maaslin_v5_species.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v5_species.df.sbs) <- 1:nrow(maaslin_v5_species.df.sbs)
+
+datatable(maaslin_v5_species.df.sbs, 
+          caption = "Table 24. Maaslin2 GSEA species - melanoma with metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+### Maaslin2 - other cancer types with metadata
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+maaslin2.results.6.response <- maaslin2.results.6[maaslin2.results.6$metadata == "response",]
+
+maaslin.vec.6 <- get_vec(maaslin2.results.6.response)
+
+maaslin_v6_phylum <- GSEA(maaslin.vec.6, TERM2GENE = TERM2GENE.phylum, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+maaslin_v6_genus <- GSEA(maaslin.vec.6, TERM2GENE = TERM2GENE.genus, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+maaslin_v6_species <- GSEA(maaslin.vec.6, TERM2GENE = TERM2GENE.species, eps = 0, pvalueCutoff = 0.25, pAdjustMethod = "fdr")
+
+maaslin_v6_phylum.df <- as.data.frame(maaslin_v6_phylum)
+maaslin_v6_genus.df <- as.data.frame(maaslin_v6_genus)
+maaslin_v6_species.df <- as.data.frame(maaslin_v6_species)
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v6_phylum.df.sbs <- maaslin_v6_phylum.df[-c(1,10,11)]
+maaslin_v6_phylum.df.sbs <- maaslin_v6_phylum.df.sbs[order(maaslin_v6_phylum.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v6_phylum.df.sbs) <- 1:nrow(maaslin_v6_phylum.df.sbs)
+
+datatable(maaslin_v6_phylum.df.sbs, 
+          caption = "Table 25. Maaslin2 GSEA phylum - other cancer types with metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v6_genus.df.sbs <- maaslin_v6_genus.df[-c(1,10,11)]
+maaslin_v6_genus.df.sbs <- maaslin_v6_genus.df.sbs[order(maaslin_v6_genus.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v6_genus.df.sbs) <- 1:nrow(maaslin_v6_genus.df.sbs)
+
+datatable(maaslin_v6_genus.df.sbs, 
+          caption = "Table 26. Maaslin2 GSEA genus - other cancer types with metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+maaslin_v6_species.df.sbs <- maaslin_v6_species.df[-c(1,10,11)]
+maaslin_v6_species.df.sbs <- maaslin_v6_species.df.sbs[order(maaslin_v6_species.df.sbs$NES, decreasing = T),]
+
+rownames(maaslin_v6_species.df.sbs) <- 1:nrow(maaslin_v6_species.df.sbs)
+
+datatable(maaslin_v6_species.df.sbs, 
+          caption = "Table 27. Maaslin2 GSEA species - other cancer types with metadata.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+## Heatmap - Maaslin2 taxonomic GSEA
+### Phylum
+```{r}
+#| include: false
+pvalue_to_stars <- function(pvalue_df, 
+                           thresholds = c(0.001, 0.01, 0.05, 0.1, 0.25),
+                           symbols = c("***", "**", "*", ".", "°")) {
+  
+  stars_df <- as.data.frame(pvalue_df)
+  
+  for (i in 1:nrow(pvalue_df)) {
+    for (j in 1:ncol(pvalue_df)) {
+      pval <- pvalue_df[i, j]
+      
+      if (is.na(pval)) {
+        stars_df[i, j] <- ""
+      } else if (pval < thresholds[1]) {
+        stars_df[i, j] <- symbols[1]
+      } else if (pval < thresholds[2]) {
+        stars_df[i, j] <- symbols[2]
+      } else if (pval < thresholds[3]) {
+        stars_df[i, j] <- symbols[3]
+      } else if (pval < thresholds[4]) {
+        stars_df[i, j] <- symbols[4]
+      } else if (pval < thresholds[5]) {
+        stars_df[i, j] <- symbols[5]
+      } else {
+        stars_df[i, j] <- ""
+      }
+    }
+  }
+  
+  return(stars_df)
+}
+```
+
+```{r}
+#| include: false
+maaslin_v1_phylum.df.sbs <- maaslin_v1_phylum.df[c(1,5,7)]
+maaslin_v2_phylum.df.sbs <- maaslin_v2_phylum.df[c(1,5,7)]
+maaslin_v3_phylum.df.sbs <- maaslin_v3_phylum.df[c(1,5,7)]
+maaslin_v4_phylum.df.sbs <- maaslin_v4_phylum.df[c(1,5,7)]
+maaslin_v5_phylum.df.sbs <- maaslin_v5_phylum.df[c(1,5,7)]
+maaslin_v6_phylum.df.sbs <- maaslin_v6_phylum.df[c(1,5,7)]
+
+maaslin_v1_phylum.df.sbs$group <- "all_v1"
+maaslin_v2_phylum.df.sbs$group <- "melanoma_v1"
+maaslin_v3_phylum.df.sbs$group <- "other_v1"
+maaslin_v4_phylum.df.sbs$group <- "all_v2"
+maaslin_v5_phylum.df.sbs$group <- "melanoma_v2"
+maaslin_v6_phylum.df.sbs$group <- "other_v2"
+
+maaslin_phylum <- rbind(maaslin_v1_phylum.df.sbs, 
+      maaslin_v2_phylum.df.sbs, 
+      maaslin_v3_phylum.df.sbs, 
+      maaslin_v4_phylum.df.sbs, 
+      maaslin_v5_phylum.df.sbs, 
+      maaslin_v6_phylum.df.sbs)
+
+maaslin_phylum.nes <- spread(maaslin_phylum[-3], group, NES, fill = 0)
+rownames(maaslin_phylum.nes) <- maaslin_phylum.nes$ID
+maaslin_phylum.nes <- maaslin_phylum.nes[-1]
+
+maaslin_phylum.pval <- spread(maaslin_phylum[-2], group, p.adjust, fill = 0)
+rownames(maaslin_phylum.pval) <- maaslin_phylum.pval$ID
+maaslin_phylum.pval <- maaslin_phylum.pval[-1]
+
+maaslin_phylum.pval[maaslin_phylum.pval == 0] <- NA
+
+maaslin_phylum.stars <- pvalue_to_stars(maaslin_phylum.pval)
+
+maaslin_phylum_heatmap <- pheatmap::pheatmap(maaslin_phylum.nes,
+                   cutree_rows = 4, 
+                   cluster_cols = F, 
+                   gaps_col = c(2,2,4,4) ,
+                   color = brewer.pal(11, "RdBu"), 
+                   display_numbers = maaslin_phylum.stars, 
+                   number_color = "white", 
+                   border_color = "grey60", 
+                   fontsize_number = 12)
+
+# pdf(file = "figure/maaslin_phylum_heatmap.pdf", width = 5, height = 3)
+# maaslin_phylum_heatmap
+# dev.off()
+```
+
+[Figure 9](figure/maaslin_phylum_heatmap.pdf)
+
+```{r fig.width=5, fig.height=3}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-cap: "Figure 7. Heatmap denoted NES values of phylum linked to immunotherapy response."
+maaslin_phylum_heatmap
+```
+
+### Genus
+```{r}
+#| include: false
+maaslin_v1_genus.df.sbs <- maaslin_v1_genus.df[c(1,5,7)]
+maaslin_v2_genus.df.sbs <- maaslin_v2_genus.df[c(1,5,7)]
+maaslin_v3_genus.df.sbs <- maaslin_v3_genus.df[c(1,5,7)]
+maaslin_v4_genus.df.sbs <- maaslin_v4_genus.df[c(1,5,7)]
+maaslin_v5_genus.df.sbs <- maaslin_v5_genus.df[c(1,5,7)]
+maaslin_v6_genus.df.sbs <- maaslin_v6_genus.df[c(1,5,7)]
+
+maaslin_v1_genus.df.sbs$group <- "all_v1"
+maaslin_v2_genus.df.sbs$group <- "melanoma_v1"
+maaslin_v3_genus.df.sbs$group <- "other_v1"
+maaslin_v4_genus.df.sbs$group <- "all_v2"
+maaslin_v5_genus.df.sbs$group <- "melanoma_v2"
+maaslin_v6_genus.df.sbs$group <- "other_v2"
+
+maaslin_genus <- rbind(maaslin_v1_genus.df.sbs, 
+      maaslin_v2_genus.df.sbs, 
+      maaslin_v3_genus.df.sbs, 
+      maaslin_v4_genus.df.sbs, 
+      maaslin_v5_genus.df.sbs, 
+      maaslin_v6_genus.df.sbs)
+
+maaslin_genus.nes <- spread(maaslin_genus[-3], group, NES, fill = 0)
+rownames(maaslin_genus.nes) <- maaslin_genus.nes$ID
+maaslin_genus.nes <- maaslin_genus.nes[-1]
+
+maaslin_genus.pval <- spread(maaslin_genus[-2], group, p.adjust, fill = 0)
+rownames(maaslin_genus.pval) <- maaslin_genus.pval$ID
+maaslin_genus.pval <- maaslin_genus.pval[-1]
+
+maaslin_genus.pval[maaslin_genus.pval == 0] <- NA
+
+maaslin_genus.stars <- pvalue_to_stars(maaslin_genus.pval)
+
+maaslin_genus_heatmap <- pheatmap::pheatmap(maaslin_genus.nes, 
+                   cutree_rows = 5, 
+                   cluster_cols = F, 
+                   gaps_col = c(2,2,4,4) ,
+                   color = brewer.pal(11, "RdBu"), 
+                   display_numbers = maaslin_genus.stars, 
+                   number_color = "white", 
+                   border_color = "grey60", 
+                   fontsize_number = 12)
+
+# pdf(file = "figure/maaslin_genus_heatmap.pdf", width = 5, height = 5)
+# maaslin_genus_heatmap
+# dev.off()
+```
+
+[Figure 8](figure/maaslin_genus_heatmap.pdf)
+
+```{r fig.width=5, fig.height=5}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-cap: "Figure 8. Heatmap denoted NES values of genus linked to immunotherapy response."
+maaslin_genus_heatmap
+```
+
+### Species
+```{r}
+#| include: false
+maaslin_v1_species.df.sbs <- maaslin_v1_species.df[c(1,5,7)]
+maaslin_v2_species.df.sbs <- maaslin_v2_species.df[c(1,5,7)]
+maaslin_v3_species.df.sbs <- maaslin_v3_species.df[c(1,5,7)]
+maaslin_v4_species.df.sbs <- maaslin_v4_species.df[c(1,5,7)]
+maaslin_v5_species.df.sbs <- maaslin_v5_species.df[c(1,5,7)]
+maaslin_v6_species.df.sbs <- maaslin_v6_species.df[c(1,5,7)]
+
+maaslin_v1_species.df.sbs$group <- "all_v1"
+maaslin_v2_species.df.sbs$group <- "melanoma_v1"
+maaslin_v3_species.df.sbs$group <- "other_v1"
+maaslin_v4_species.df.sbs$group <- "all_v2"
+maaslin_v5_species.df.sbs$group <- "melanoma_v2"
+maaslin_v6_species.df.sbs$group <- "other_v2"
+
+maaslin_species <- rbind(maaslin_v1_species.df.sbs, 
+      maaslin_v2_species.df.sbs, 
+      maaslin_v3_species.df.sbs, 
+      maaslin_v4_species.df.sbs, 
+      maaslin_v5_species.df.sbs, 
+      maaslin_v6_species.df.sbs)
+
+maaslin_species.nes <- spread(maaslin_species[-3], group, NES, fill = 0)
+rownames(maaslin_species.nes) <- maaslin_species.nes$ID
+maaslin_species.nes <- maaslin_species.nes[-1]
+
+maaslin_species.pval <- spread(maaslin_species[-2], group, p.adjust, fill = 0)
+rownames(maaslin_species.pval) <- maaslin_species.pval$ID
+maaslin_species.pval <- maaslin_species.pval[-1]
+
+maaslin_species.pval[maaslin_species.pval == 0] <- NA
+
+maaslin_species.stars <- pvalue_to_stars(maaslin_species.pval)
+
+maaslin_species_heatmap <- pheatmap::pheatmap(maaslin_species.nes, 
+                   cutree_rows = 4, 
+                   cluster_cols = F, 
+                   gaps_col = c(2,2,4,4), 
+                   color = brewer.pal(11, "RdBu"), 
+                   display_numbers = maaslin_species.stars,
+                   number_color = "white", 
+                   border_color = "grey60", 
+                   fontsize_number = 12)
+
+# pdf(file = "figure/maaslin_species_heatmap.pdf", width = 6, height = 5)
+# maaslin_species_heatmap
+# dev.off()
+```
+
+[Figure 9](figure/maaslin_species_heatmap.pdf)
+
+```{r fig.width=6, fig.height=5}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-cap: "Figure 9. Heatmap denoted NES values of species linked to immunotherapy response."
+maaslin_species_heatmap
+```
+
+## Links between prevalence in population and association with immunotherapy responsitiveness
+<p style="text-align: justify;">
+Previous meta-analyses have established reproducible taxonomic associations with immunotherapy response across multiple cancer types. A consistent pattern emerging from these studies is that the most reliable biomarkers typically represent bacterial taxa with high prevalence in human populations. A paradigmatic example is *F. saccharivorans*, a species frequently identified in association studies as a marker of intestinal health. Supporting this pattern, our analysis reveals that *F. saccharivorans* OGUs are significantly more prevalent than the average OGU in our dataset (Wilcoxon rank sum test W = 67466, p-value = 3.169e-12).
+<p>
+
+<p style="text-align: justify;">
+This observation led us to hypothesize that a bacterium's prevalence across samples in a cohort directly correlates with its association with positive immunotherapy outcomes in melanoma. We propose that highly prevalent, autochthonous microbes are evolutionarily adapted for symbiotic coexistence and play integral roles in maintaining immune homeostasis. Their abundance may therefore serve as a robust indicator of a stable gut environment conducive to treatment success. Conversely, low-prevalence bacteria represent a heterogeneous group comprising either rare autochthonous ecosystem members, which are challenging to detect consistently, or allochthonous microbes originating from external sources such as food or the upper gastrointestinal tract. Elevated abundance of the latter typically signifies dysbiosis.
+<p>
+
+<p style="text-align: justify;">
+Standard differential abundance analysis faces substantial limitations when evaluating these low-prevalence taxa. Statistical challenges including zero-inflation (where bacteria are absent in most samples) and low abundance lead to unreliable regression coefficients with wide confidence intervals and reduced statistical power. Consequently, rare taxa are typically filtered out prior to analysis, which reduces the total number of hypotheses tested and mechanically affects the stringency of multiple comparison corrections, ultimately limiting discovery of associations with potentially informative allochthonous community members.
+<p>
+
+<p style="text-align: justify;">
+Initial correlation analysis of MaAsLin2 coefficients - recomputed without prevalence filtering to include all microbial taxa in the dataset - with microbial prevalence revealed a weak but statistically significant positive relationship (Spearman ρ = 0.14 ± 0.05, p < 0.001) across all analytical variants. To address the limitations of conventional approaches, we employed an alternative method based on Songbird [Morton et al., 2019], which we have successfully applied in previous studies [Olekhnovich et al., 2023; Zakharevich et al., 2024]. This approach generates regression coefficients for each bacterium without pre-filtering within each dataset independently, interpreted as log₂ fold changes while accounting for underrepresented diversity. The Songbird-based correlation analysis demonstrated stronger and more consistent effects: across all datasets, the correlation was positive in 10 of 11 datasets (Spearman ρ = 0.25 ± 0.09, adj. p < 0.001). The single exception was the Heshiki_2020 dataset (n = 11), which showed a significant negative weak correlation (Spearman ρ = -0.07, adjusted p < 0.05). The robustness of this relationship was further validated using linear regression modeling, which confirmed a significant positive association between prevalence in collected dataset and Songbird coefficients (Estimate = 1.310e-03, p < 2e-16) without substantial confounding by dataset identity, as the dataset factor terms showed no statistically significant effects (all p > 0.05 after multiple testing consideration).
+<p>
+
+<p style="text-align: justify;">
+Given the superior performance of Songbird in capturing the prevalence-association relationship - evidenced by both stronger correlation coefficients - we selected this approach for all subsequent analyses. This decision is further supported by Songbird's inherent methodological advantages for compositional data, including its ability to model rare taxa thereby providing a more comprehensive and biologically relevant assessment of microbial associations with immunotherapy outcomes. Detailed correlation coefficients, p-values, and sample sizes for each individual dataset are comprehensively documented in Tables 28-29.
+<p>
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+ogu_table.s <- ogu_table
+ogu_table.s[ogu_table.s > 0] <- 1
+
+ogu_table.s <- as.data.frame(colSums(ogu_table.s))
+colnames(ogu_table.s) <- "n_datasets"
+ogu_table.s <- merge(cbind(featureid = rownames(tax_table), tax_table), cbind(rownames(ogu_table.s), ogu_table.s), by = 1)
+
+wilcox.test(ogu_table.s$n_datasets[ogu_table.s$species == "Fusicatenibacter saccharivorans"], 
+      ogu_table.s$n_datasets[ogu_table.s$species != "Fusicatenibacter saccharivorans"], alternative = "greater")
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+
+# Maaslin2(input_data = ogu_table,
+#          input_metadata = as.data.frame(t(meta_data_phyloseq[-1])),
+#          output = "results/7.Maaslin2_all_without_metadata_full",
+#          random_effects = "dataset",
+#          fixed_effects = c("response", "cancer_type"),
+#          plot_heatmap = F,
+#          save_scatter = F, 
+#          min_abundance = 0, 
+#          min_prevalence = 0)
+
+# Maaslin2(input_data = ogu_table.2,
+#          input_metadata = as.data.frame(t(meta_data_v2_phyloseq[-1])),
+#          output = "results/8.Maaslin2_melanoma_without_metadata_full",
+#          random_effects = "dataset",
+#          fixed_effects = "response",
+#          plot_heatmap = F,
+#          save_scatter = F,
+#          min_abundance = 0,
+#          min_prevalence = 0)
+
+# Maaslin2(input_data = ogu_table.3,
+#          input_metadata = as.data.frame(t(meta_data_v3_phyloseq[-1])),
+#          output = "results/9.Maaslin2_other_cancer_types_without_metadata_full",
+#          random_effects = "dataset",
+#          fixed_effects = "response",
+#          plot_heatmap = F,
+#          save_scatter = F, 
+#          min_abundance = 0, 
+#          min_prevalence = 0)
+
+# Maaslin2(input_data = ogu_table.4,
+#          input_metadata = as.data.frame(t(meta_data_v4_phyloseq[-1])),
+#          output = "results/10.Maaslin2_all_with_metadata_full",
+#          random_effects = "dataset",
+#          fixed_effects = c("age", "gender", "cancer_type", "response"),
+#          plot_heatmap = F,
+#          save_scatter = F, 
+#          min_abundance = 0, 
+#          min_prevalence = 0)
+
+# Maaslin2(input_data = ogu_table.5,
+#          input_metadata = as.data.frame(t(meta_data_v5_phyloseq[-1])),
+#          output = "results/11.Maaslin2_melanoma_with_metadata_full",
+#          random_effects = "dataset",
+#          fixed_effects = c("age", "gender", "response"),
+#          plot_heatmap = F,
+#          save_scatter = F,
+#          min_abundance = 0, 
+#          min_prevalence = 0)
+
+# Maaslin2(input_data = ogu_table.6,
+#          input_metadata = as.data.frame(t(meta_data_v6_phyloseq[-1])),
+#          output = "results/12.Maaslin2_other_cancer_types_with_metadata_full",
+#          random_effects = "dataset",
+#          fixed_effects = c("age", "gender", "response"),
+#          plot_heatmap = F,
+#          save_scatter = F, 
+#          min_abundance = 0, 
+#          min_prevalence = 0)
+```
+
+```{r}
+#| include: false
+maaslin2.results.full.1 <- read.csv("results/7.Maaslin2_all_without_metadata_full/all_results.tsv", sep = "\t")
+maaslin2.results.full.2 <- read.csv("results/8.Maaslin2_melanoma_without_metadata_full/all_results.tsv", sep = "\t")
+maaslin2.results.full.3 <- read.csv("results/9.Maaslin2_other_cancer_types_without_metadata_full/all_results.tsv", sep = "\t")
+maaslin2.results.full.4 <- read.csv("results/10.Maaslin2_all_with_metadata_full/all_results.tsv", sep = "\t")
+maaslin2.results.full.5 <- read.csv("results/11.Maaslin2_melanoma_with_metadata_full/all_results.tsv", sep = "\t")
+maaslin2.results.full.6 <- read.csv("results/12.Maaslin2_other_cancer_types_with_metadata_full/all_results.tsv", sep = "\t")
+
+maaslin_list <- list(
+      maaslin2.results.full.1,
+      maaslin2.results.full.2, 
+      maaslin2.results.full.3,
+      maaslin2.results.full.4,
+      maaslin2.results.full.5,
+      maaslin2.results.full.6
+)
+
+maaslin_list <- lapply(maaslin_list, function(df) {
+      df[df$metadata == "response", c(1,4)]
+})
+
+all.maaslin.full <- ogu_table.s[c(1,9)]
+for(i in seq_along(maaslin_list)) {
+      all.maaslin.full <- merge(
+            all.maaslin.full, 
+            maaslin_list[[i]], 
+            by = 1
+      )
+      colnames(all.maaslin.full)[ncol(all.maaslin.full)] <- paste0("coef_", i)
+}
+
+cor_results <- lapply(paste0("coef_", 1:6), function(coef_col) {
+      cor.test(
+            all.maaslin.full$n_datasets, 
+            all.maaslin.full[[coef_col]], 
+            method = "spearman"
+      )
+})
+
+cor_summary <- data.frame(
+      variable = c("all_v1", "all_v2", "melanoma_v1", "melanoma_v2", "other_v1", "other_v2"),
+      rho = sapply(cor_results, function(x) x$estimate),
+      p_value = sapply(cor_results, function(x) x$p.value),
+      stringsAsFactors = FALSE
+)
+
+cor_summary$p.adjust <- p.adjust(cor_summary$p_value, method = "BH")
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(cor_summary,
+          caption = "Table 28. Dataset number and Maaslin2 coefficient.",
+          style = "bootstrap5",
+          extensions = 'Buttons',
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+### Number of datasets and songbird coefficient correlations
+```{r}
+#| include: false
+ogu_table_freq <- ogu_table
+ogu_table_freq[ogu_table_freq > 0] <- 1
+ogu_table_freq <- as.data.frame(colSums(ogu_table_freq))
+
+colnames(ogu_table_freq) <- "n_datasets"
+ogu_table_freq <- cbind(featureid = rownames(ogu_table_freq), ogu_table_freq)
+rownames(ogu_table_freq) <- 1:nrow(ogu_table_freq)
+
+songbird_Frankel_2017_freq <- merge(ogu_table_freq, songbird_Frankel_2017, by = 1)
+songbird_Gopalakrishnan_2019_freq <- merge(ogu_table_freq, songbird_Gopalakrishnan_2019, by = 1)
+songbird_Matson_2019_freq <- merge(ogu_table_freq, songbird_Matson_2019, by = 1)
+songbird_Spencer_2021_freq <- merge(ogu_table_freq, songbird_Spencer_2021, by = 1)
+songbird_Lee_2022_freq <- merge(ogu_table_freq, songbird_Lee_2022, by = 1)
+songbird_Liu_2022_freq <- merge(ogu_table_freq, songbird_Liu_2022, by = 1)
+songbird_McCulloch_2022_freq <- merge(ogu_table_freq, songbird_McCulloch_2022, by = 1)
+songbird_Peng_2020_freq <- merge(ogu_table_freq, songbird_Peng_2020, by = 1)
+songbird_Tsakmaklis_2023_freq <- merge(ogu_table_freq, songbird_Tsakmaklis_2023, by = 1)
+songbird_Gunjur_2024_freq <- merge(ogu_table_freq, songbird_Gunjur_2024, by = 1)
+songbird_Heshiki_2020_freq <- merge(ogu_table_freq, songbird_Heshiki_2020, by = 1)
+
+cor_results <- list()
+
+cor_results$Frankel_2017 <- cor.test(songbird_Frankel_2017_freq$response.T.R., songbird_Frankel_2017_freq$n_datasets, method = "spearman")
+cor_results$Gopalakrishnan_2019 <- cor.test(songbird_Gopalakrishnan_2019_freq$response.T.R., songbird_Gopalakrishnan_2019_freq$n_datasets, method = "spearman")
+cor_results$Matson_2019 <- cor.test(songbird_Matson_2019_freq$response.T.R., songbird_Matson_2019_freq$n_datasets, method = "spearman")
+cor_results$Spencer_2021 <- cor.test(songbird_Spencer_2021_freq$response.T.R., songbird_Spencer_2021_freq$n_datasets, method = "spearman")
+cor_results$Lee_2022 <- cor.test(songbird_Lee_2022_freq$response.T.R., songbird_Lee_2022_freq$n_datasets, method = "spearman")
+cor_results$Liu_2022 <- cor.test(songbird_Liu_2022_freq$response.T.R., songbird_Liu_2022_freq$n_datasets, method = "spearman")
+cor_results$McCulloch_2022 <- cor.test(songbird_McCulloch_2022_freq$response.T.R., songbird_McCulloch_2022_freq$n_datasets, method = "spearman")
+cor_results$Peng_2020 <- cor.test(songbird_Peng_2020_freq$response.T.R., songbird_Peng_2020_freq$n_datasets, method = "spearman")
+cor_results$Tsakmaklis_2023 <- cor.test(songbird_Tsakmaklis_2023_freq$response.T.R., songbird_Tsakmaklis_2023_freq$n_datasets, method = "spearman")
+cor_results$Gunjur_2024 <- cor.test(songbird_Gunjur_2024_freq$response.T.R., songbird_Gunjur_2024_freq$n_datasets, method = "spearman")
+cor_results$Heshiki_2020 <- cor.test(songbird_Heshiki_2020_freq$response.T.R., songbird_Heshiki_2020_freq$n_datasets, method = "spearman")
+
+extract_cor_results <- function(cor_list) {
+      results <- data.frame(
+            dataset = names(cor_list),
+            rho = sapply(cor_list, function(x) x$estimate),
+            pvlaue = sapply(cor_list, function(x) x$p.value)
+  )
+      return(results)
+}
+
+cor_table <- extract_cor_results(cor_results)
+
+rownames(cor_table) <- 1:nrow(cor_table)
+
+cor_table$padj <- p.adjust(cor_table$pvlaue, method = "fdr")
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(cor_table,
+          caption = "Table 29. Dataset number and Songbird coefficient.",
+          style = "bootstrap5",
+          extensions = 'Buttons',
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+songbird_Frankel_2017_freq$dataset <- "Frankel_2017"
+songbird_Gopalakrishnan_2019_freq$dataset <- "Gopalakrishnan_2019"
+songbird_Matson_2019_freq$dataset <- "Matson_2019"
+songbird_Spencer_2021_freq$dataset <- "Spencer_2021"
+songbird_Lee_2022_freq$dataset <- "Lee_2022"
+songbird_Liu_2022_freq$dataset <- "Liu_2022"
+songbird_McCulloch_2022_freq$dataset <- "McCulloch_2022"
+songbird_Peng_2020_freq$dataset <- "Peng_2020"
+songbird_Tsakmaklis_2023_freq$dataset <- "Tsakmaklis_2023"
+songbird_Gunjur_2024_freq$dataset <- "Gunjur_2024"
+songbird_Heshiki_2020_freq$dataset <- "Heshiki_2020"
+
+all_freq <- rbind(
+      songbird_Frankel_2017_freq,
+      songbird_Gopalakrishnan_2019_freq,
+      songbird_Matson_2019_freq,
+      songbird_Spencer_2021_freq,
+      songbird_Lee_2022_freq,
+      songbird_Liu_2022_freq,
+      songbird_McCulloch_2022_freq,
+      songbird_Peng_2020_freq,
+      songbird_Tsakmaklis_2023_freq,
+      songbird_Gunjur_2024_freq,
+      songbird_Heshiki_2020_freq
+)
+
+glm.freq <- glm(response.T.R. ~ n_datasets + factor(dataset), data = all_freq)
+summary(glm.freq)
+```
+
+## Songbird marker OGUs discovery
+<p style="text-align: justify;">
+Differential abundance analysis identified 350 marker OGUs that were significantly differentiated between R and NR groups. Among these, 149 features showed enrichment in responders, while 201 were enriched in non-responders (Table 30). The variability of Songbird coefficients for these marker OGUs across different datasets is visualized in Figure 10, revealing consistent directional effects despite inter-study heterogeneity. Analysis of log ratio values derived from metagenomic samples (detailed in Table 31) demonstrated clear separation between experimental groups, with distribution patterns visualized in Figure 11. Mixed-effects modeling revealed a significant positive association between responder status and log ratio values (β = 1.759, p < 0.001), confirming that responders consistently exhibited higher log ratios. This indicates that a shift in the gut ecosystem toward a consortium of responder-enriched taxa is a key determinant of treatment success. The dataset variable accounted for substantial random effects variance (p < 0.001), indicating important study-specific variations while maintaining the overall significant relationship. Visual inspection of the model's residuals confirmed that their distribution was approximately normal, supporting the validity of the statistical inference (Figure 12). The robustness of these findings was additionally supported by bootstrap validation, which yielded a 95% confidence interval of [0.902, 2.468] for the fixed effect estimate. Effect size analysis further substantiated the clinical relevance of this association, revealing a large practical effect (Cohen's d = 0.82) that underscores the biological significance of the identified microbial signatures in distinguishing treatment response groups.
+<p>
+
+<p style="text-align: justify;">
+To rigorously evaluate the generalizability and predictive power of this log-ratio biomarker, we performed a leave-one-group-out cross-validation. Logistic regression models were trained on all but one dataset and tested on the held-out cohort. The results demonstrate stable predictive performance across diverse studies, with a mean AUC of 0.67 ± 0.13 (Figure 13). Performance was notably strong in several independent cohorts, including Heshiki_2020 (AUC=0.90) and Gunjur_2024 (AUC=0.88). While some variability was observed—as expected given inherent inter-study differences in patient populations and sequencing protocols—the consistent predictive power across most held-out datasets underscores the utility of the log-ratio as a generalizable, non-invasive biomarker for predicting immunotherapy response in different type of cancer (Table 32; Figure 14).
+<p>
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(ogu.markers, 
+          caption = "Table 30. Marker OGU with Sondbird coefficients (MEAN ± SD).",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| include: false
+coef_barplot <- ggplot(ogu.markers, aes(x = reorder(featureid, mean), y=mean)) + 
+    geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd), width=.2,
+        position=position_dodge(0.05), col = "gray58") +
+    # geom_point(shape = 0, size = 0.25)+
+    geom_hline(yintercept = 0, col = "red")+
+    theme_bw()+
+    theme(
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) + 
+    theme(
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(fill = NA))+
+    ylab("R/NR + k")+
+    xlab("OGUs")
+```
+
+```{r fig.width=8, fig.height=4}
+#| echo: false
+download_this(
+  coef_barplot,
+  output_name = "coef_barplot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=8, fig.height=4}
+#| echo: false
+#| fig-cap: "Figure 10. The barplot depicts Songbird differential abundance coefficients (MEAN ± SD) for marker Operational Genomic Units (OGUs), with the x-axis representing individual OGUs and the y-axis showing the magnitude and direction of association coefficients."
+coef_barplot
+```
+
+```{r}
+#| include: false
+ogu_table.markers <- ogu_table[colnames(ogu_table) %in% ogu.markers$featureid]
+ogu_table.markers <- ogu_table.markers + 0.0001
+
+df.log_ratio <- NULL
+for (i in rownames(ogu_table.markers)){
+      df <- ogu_table.markers[rownames(ogu_table.markers) %in% i,]
+    
+      df_denominator <- df[colnames(df) %in% ogu.markers$featureid[ogu.markers$biomarker == "denominator"]]
+      df_numerator <- df[colnames(df) %in% ogu.markers$featureid[ogu.markers$biomarker == "numerator"]]
+    
+      df_denominator <- df_denominator[df_denominator > 0]
+      df_numerator <- df_numerator[df_numerator > 0]
+    
+      log_ratio <- log(sum(df_numerator)/sum(df_denominator))
+      df.s <- data.frame(sampleid = i, log_ratio)
+      df.log_ratio <- rbind(df.s, df.log_ratio)
+}
+
+df.log_ratio <- merge(meta_data, df.log_ratio, by = 1)
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(df.log_ratio, 
+          caption = "Table 31. Log ratio (LR) values of marker OGU across samples.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| message: true
+#| warning: false
+#| include: false
+logratio_plot <- ggplot(df.log_ratio, aes(log_ratio, response, col = response))+
+      stat_halfeye()+
+      xlab("Log ratio")+
+      ylab("Response")+
+      theme_pubr()+
+      theme(legend.position = "none")+
+      scale_color_brewer(palette = "Set1")
+```
+
+```{r fig.width=4, fig.height=3}
+#| echo: false
+download_this(
+  logratio_plot,
+  output_name = "logratio_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=4, fig.height=3}
+#| echo: false
+#| fig-cap: "Figure 11. The boxplot shows log ratio (LR) values obtained using marker OGU. LR is highest in the R group (median = 3.0) and lowest in NR group (median = 1.4)."
+logratio_plot
+```
+
+### LMER test results
+```{r}
+#| echo: false
+lmer.log_ratio <- lmer(log_ratio ~ response + (1|dataset), data = df.log_ratio)
+
+# boot_case <- bootstrap(lmer.log_ratio, 
+#           .f = function(x) fixef(x),
+#           type = "case",
+#           resample = c(TRUE, TRUE),
+#           B = 1000)
+# 
+# confint(boot_case, type = "perc")
+```
+
+```{r}
+#| echo: false
+summary(lmer.log_ratio)
+```
+
+### Dataset variable inportance
+```{r}
+#| echo: false
+ranova(lmer.log_ratio)
+```
+
+### Effect size estimation
+```{r}
+#| echo: false
+cohens_d(log_ratio ~ response, data = df.log_ratio)
+```
+
+### Residuals of the model normality testing
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+logratio.residuals.plot <- qplot(residuals(lmer.log_ratio), dist = "normal") + theme_bw()
+```
+
+```{r fig.width=4, fig.height=3}
+#| echo: false
+download_this(
+  logratio_plot,
+  output_name = "logratio_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.height=4, fig.width=5}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-cap: "Figure 12. Quantile-quantile diagram of mixed linear model residuals."
+logratio.residuals.plot
+```
+
+### Log regression
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+df.log_ratio <- merge(df.log_ratio, statistic[-2], by = 1)
+
+df.log_ratio$response <- factor(df.log_ratio$response, levels = c("R", "NR"))
+df.log_ratio$dataset <- factor(df.log_ratio$dataset)
+
+groups <- unique(df.log_ratio$dataset)
+
+recipe_balanced <- recipe(response ~ log_ratio, data = df.log_ratio) %>%
+      step_dummy(all_nominal_predictors()) %>%
+      step_normalize(all_numeric_predictors())
+
+model <- logistic_reg() %>%
+      set_engine("glm") %>%
+      set_mode("classification")
+
+workflow_balanced <- workflow() %>%
+      add_recipe(recipe_balanced) %>%
+      add_model(model)
+
+logo_cv <- function(group) {
+  
+      test_data <- df.log_ratio %>% filter(dataset == group)
+      train_data <- df.log_ratio %>% filter(dataset != group)
+  
+      fitted_model <- fit(workflow_balanced, data = train_data)
+  
+      predictions <- fitted_model %>%
+            predict(new_data = test_data, type = "prob") %>%
+      bind_cols(
+            predict(fitted_model, new_data = test_data, type = "class"),
+            test_data
+      )
+  
+      list(
+            predictions = predictions,
+            metrics = predictions %>%
+            metrics(truth = response, estimate = .pred_class, .pred_R)
+      )
+}
+
+logo_results <- map(groups, logo_cv, .progress = TRUE)
+
+all_predictions <- map_dfr(logo_results, ~.x$predictions)
+
+roc_curve_logo <- all_predictions %>%
+  roc_curve(truth = response, .pred_R)
+
+roc_plot <- autoplot(roc_curve_logo) +
+  ggtitle("ROC Curve from LOGO CV") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  theme_minimal()
+
+group_performance <- all_predictions %>%
+  group_by(dataset) %>%
+  summarise(
+    auc = roc_auc_vec(truth = response, .pred_R),
+    accuracy = accuracy_vec(truth = response, estimate = .pred_class),
+    sensitivity = sensitivity_vec(truth = response, estimate = .pred_class),
+    specificity = specificity_vec(truth = response, estimate = .pred_class),
+    precision = precision_vec(truth = response, estimate = .pred_class),
+    .groups = "drop"
+  )
+
+group_performance$f1_score <- 2 * (group_performance$precision * group_performance$sensitivity) / 
+  (group_performance$precision + group_performance$sensitivity)
+
+group_performance_melt <- melt(group_performance)
+colnames(group_performance_melt)[c(2,3)] <- c("metrics", "value")
+
+metrics_plot <- ggplot(group_performance_melt, aes(value, metrics))+
+    stat_halfeye()+
+    xlab("Value")+
+    ylab("Metrics")+
+    theme_pubr()+
+    theme(legend.position = "none")
+```
+
+```{r fig.height=4, fig.width=4}
+#| echo: false
+download_this(
+  roc_plot,
+  output_name = "roc_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=4, fig.height=4}
+#| echo: false
+#| fig-cap: "Figure 13. Receiver operating characteristic (ROC) curve for log regression performance using 'leave-one group out' (LOGO) cross-validation."
+roc_plot
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+group_performance[-1] <- apply(group_performance[-1], 2, function(x) round(x, 2))
+
+datatable(group_performance,
+          caption = "Table 32. Log regression prediction metrics.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.width=4.5, fig.height=3.5}
+#| echo: false
+download_this(
+  metrics_plot,
+  output_name = "metrics_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=4.5, fig.height=3.5}
+#| echo: false
+#| fig-cap: "Figure 14. Distribution of log regression prediction metrics across datasets obtained by LOGO cross-validation."
+metrics_plot
+```
+
+# Marker OGUs characterization
+<p style="text-align: justify;">
+We further characterized the 350 previously identified marker OGUs through taxonomic, ecological, and functional enrichment analysis. The results largely corroborated the findings from the Maaslin2-based analysis but revealed a key taxonomic discrepancy. At the taxonomic level, Songbird analysis recapitulated the enrichment of Proteobacteria in NR (NES = -1.93, adj. p = 0.007), with core species including *Enterobacter kobei*, *Escherichia coli*, and several *Citrobacter* and *Klebsiella* species (Table 34; Figure 15). Conversely, and in contrast to the Maaslin2 results, Bacteroidota was enriched in the R group (NES = 2.29, adj. p < 0.001). This responder-associated signature was further refined at finer taxonomic resolutions. At the genus level, the R group was enriched for *Bacteroides*, *Gemmiger*, and *Faecalibacterium* (NES > 2, adj. p < 0.001; Table 35, Figure 16), while the NR group was characterized by *Prevotella* (NES = -1.78, adj. p = 0.02) and *Veillonella* (NES = -2.30, adj. p < 0.001). Key species driving this beneficial association included *Faecalibacterium prausnitzii* (NES = 1.84, adj. p = 0.007) and *Gemmiger qucibialis* (NES = 2.38, adj. p < 0.001; Table 36, Figure 17). The consistency with our prior Maaslin2 findings is notable. Specifically, *Faecalibacterium prausnitzii* reaffirmed its status as a universal responder-associated taxon across both analyses. The primary divergence between methods concerned the phylum Bacteroidota, which was associated with the NR group in the Maaslin2 analysis but with the R group in the present Songbird analysis.
+<p>
+
+<p style="text-align: justify;">
+We investigated the exogenous origins of the microbial markers by comparing our 3,816 OGUs to metagenome-assembled genomes (MAGs) from non-intestinal body sites and food. This revealed 293 OGUs clustering with non-intestinal MAGs and 91 with food-derived MAGs at the species level (95% ANI; Tables 37, 38). Strikingly, non-responder (NR)-linked OGUs were significantly enriched for these food-derived (NES = -2, p = 0.001) and oral-derived (NES = -2.60, p = 5.18e-7) clusters (Table 39, Figure 18; Table 40, Figure 19). This pattern indicates a dysbiotic state in non-responders characterized by the intrusion of exogenous microbes, driven by core species including the food-borne opportunists *Citrobacter freundii*, *Escherichia coli*, and *Klebsiella michiganensis*, and the oral commensals *Veillonella parvula* and *Anaeroglobus micronuciformis*.
+<p>
+
+## Taxonomy
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+vec <- ogu.markers$mean
+names(vec) <- ogu.markers$featureid
+vec <- sort(vec, decreasing = T)
+
+fgsea_phylum <- GSEA(vec, TERM2GENE = ogu.markers[c(8,1)], eps = 0)
+
+fgsea_phylum_df <- as.data.frame(fgsea_phylum)
+rownames(fgsea_phylum_df) <- 1:nrow(fgsea_phylum_df)
+fgsea_phylum_df <- fgsea_phylum_df[-2]
+
+core_enrichment_phylum_1 <- data.frame(featureid = unlist(str_split(fgsea_phylum_df$core_enrichment[[1]], "\\/")))
+core_enrichment_phylum_1 <- merge(core_enrichment_phylum_1, ogu.markers, by = 1)
+core_enrichment_phylum_1 <- core_enrichment_phylum_1[c(1,7:13)]
+
+core_enrichment_phylum_2 <- data.frame(featureid = unlist(str_split(fgsea_phylum_df$core_enrichment[[2]], "\\/")))
+core_enrichment_phylum_2 <- merge(core_enrichment_phylum_2, ogu.markers, by = 1)
+core_enrichment_phylum_2 <- core_enrichment_phylum_2[c(1,7:13)]
+
+fgsea_genus <- GSEA(vec, TERM2GENE = ogu.markers[c(12,1)], eps = 0)
+
+fgsea_genus_df <- as.data.frame(fgsea_genus)
+rownames(fgsea_genus_df) <- 1:nrow(fgsea_genus_df)
+fgsea_genus_df <- fgsea_genus_df[-2]
+fgsea_genus_df <- fgsea_genus_df[order(fgsea_genus_df$NES, decreasing = T),]
+
+fgsea_species  <- GSEA(vec, TERM2GENE = ogu.markers[c(13,1)], eps = 0)
+
+fgsea_species_df <- as.data.frame(fgsea_species)
+rownames(fgsea_species_df) <- 1:nrow(fgsea_species_df)
+fgsea_species_df <- fgsea_species_df[-2]
+fgsea_species_df <- fgsea_species_df[order(fgsea_species_df$NES, decreasing = T),]
+
+gsea_phylum_plot <- gseaNb(object = fgsea_phylum, 
+      geneSetID = fgsea_phylum_df$ID, 
+      curveCol = brewer.pal(name = "Set1", n = 9), 
+      htCol = c("#A50F15", "#08519C"))
+                              
+gsea_genus_plot <- gseaNb(object = fgsea_genus,
+      geneSetID = fgsea_genus_df$ID, 
+      curveCol = c(brewer.pal(name = "Set1", n = 9)[-6], "cyan4"), 
+      htCol = c("#A50F15", "#08519C"))
+
+gsea_species_plot <- gseaNb(object = fgsea_species,
+      geneSetID = fgsea_species_df$ID, 
+      curveCol = c(brewer.pal(name = "Set1", n = 9)[-6], "cyan4"), 
+      htCol = c("#A50F15", "#08519C"))
+```
+
+### Phylum
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(fgsea_phylum_df[1:8], 
+          caption = "Table 33. GSEA results at the phylum level.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(core_enrichment_phylum_2, 
+          caption = "Table 34. GSEA results at the phylum level: Proteobacteria core enrichment.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.width=6, fig.height=5.5}
+#| echo: false
+download_this(
+  gsea_phylum_plot,
+  output_name = "gsea_phylum_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=6, fig.height=5.5}
+#| echo: false
+#| fig-cap: "Figure 15. GSEA results at the phylum level."
+gsea_phylum_plot
+```
+
+### Genus
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(fgsea_genus_df[1:8], 
+          caption = "Table 35. GSEA results at the genus level.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.width=6, fig.height=5.5}
+#| echo: false
+download_this(
+  gsea_genus_plot,
+  output_name = "gsea_genus_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=6, fig.height=5.5}
+#| echo: false
+#| fig-cap: "Figure 16. GSEA results at the genus level."
+gsea_genus_plot
+```
+
+### Species
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(fgsea_species_df[1:8], 
+          caption = "Table 36. GSEA results at the species level.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.width=7, fig.height=5.5}
+#| echo: false
+download_this(
+  gsea_species_plot,
+  output_name = "gsea_species_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=7, fig.height=5.5}
+#| echo: false
+#| fig-cap: "Figure 17. GSEA results at the species level."
+gsea_species_plot
+```
+
+## Origin
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+food$site <- "Food"
+
+fgsea_food <- GSEA(vec, TERM2GENE = food[c(2,1)], eps = 0, pAdjustMethod = "BH")
+
+fgsea_food_df <- as.data.frame(fgsea_food)
+rownames(fgsea_food_df) <- 1:nrow(fgsea_food_df)
+fgsea_food_df <- fgsea_food_df[-2]
+fgsea_food_df <- fgsea_food_df[order(fgsea_food_df$NES, decreasing = T),]
+
+core_enrichment_food <- tax_table[rownames(tax_table) %in% unlist(str_split(fgsea_food_df$core_enrichment, pattern = "\\/")),]
+core_enrichment_food <- core_enrichment_food[order(core_enrichment_food$species),]
+
+fgsea_bodysite <- GSEA(vec, TERM2GENE = body_site[c(2,1)], pAdjustMethod = "BH")
+
+fgsea_bodysite_df <- as.data.frame(fgsea_bodysite)
+rownames(fgsea_bodysite_df) <- 1:nrow(fgsea_bodysite_df)
+fgsea_bodysite_df <- fgsea_bodysite_df[-2]
+fgsea_bodysite_df <- fgsea_bodysite_df[order(fgsea_bodysite_df$NES, decreasing = T),]
+
+core_enrichment_bodysite <- tax_table[rownames(tax_table) %in% unlist(str_split(fgsea_bodysite_df$core_enrichment, pattern = "\\/")),]
+core_enrichment_bodysite <- core_enrichment_bodysite[order(core_enrichment_bodysite$species),]
+
+gsea_food_plot <- gseaNb(fgsea_food, 
+       geneSetID = 'Food', 
+       htCol = c("#A50F15", "#08519C"))
+
+gsea_bodysite_plot <- gseaNb(object = fgsea_bodysite,
+       geneSetID = 'Oral cavity', 
+       htCol = c("#A50F15", "#08519C"))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+food_df <- merge(food, cbind(rownames(tax_table), tax_table), by = 1)
+
+datatable(food_df, 
+          caption = "Table 37. OGUs clustered with food-associated MAGs at 95% nucleotide similarity.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+body_site_df <- merge(body_site, cbind(rownames(tax_table), tax_table), by = 1)
+
+datatable(body_site_df, 
+          caption = "Table 38. OGUs clustered with different bodysite-associated MAGs at 95% nucleotide similarity.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(fgsea_food_df[1:8], 
+          caption = "Table 39. GSEA results at food-related OGUs.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(fgsea_bodysite_df[1:8], 
+          caption = "Table 40. GSEA results at bodysite-related OGUs.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(core_enrichment_food, 
+          caption = "Table 41. GSEA results at food-related OGUs: core enrichment.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.width=4.5, fig.height=3.5}
+#| echo: false
+download_this(
+  gsea_food_plot,
+  output_name = "gsea_food_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=4.5, fig.height=3.5}
+#| echo: false
+#| fig-cap: "Figure 18. GSEA results at food-related OGUs."
+gsea_food_plot
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(core_enrichment_bodysite, 
+          caption = "Table 42. GSEA results at food-related OGUs: core enrichment: core enrichment.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.width=4.5, fig.height=3.5}
+#| echo: false
+download_this(
+  gsea_bodysite_plot,
+  output_name = "gsea_bodysite_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=4.5, fig.height=3.5}
+#| echo: false
+#| fig-cap: "Figure 19. GSEA results at bodysite-related OGUs."
+gsea_bodysite_plot
+```
+
+## Functional potential
+```{r}
+#| include: false
+set.seed(1143)
+
+calculate_gene_associations <- function(CAZy, ogu.markers) {
+      
+      cazy.frequency <- data.frame()
+      
+      for(i in colnames(CAZy)) {
+            tryCatch({
+                  ft <- data.frame(featureid = rownames(CAZy), gene = CAZy[, i])
+                  ft <- merge(ogu.markers, ft, by = "featureid")
+                  
+                  cont_table <- table(ft$biomarker, ft$gene)
+                  
+                  if(ncol(cont_table) == 2 && 
+                     "numerator" %in% rownames(cont_table) &&
+                     "denominator" %in% rownames(cont_table) &&
+                     "1" %in% colnames(cont_table)) {
+                        
+                        freq_R <- cont_table["numerator", "1"] / sum(cont_table["numerator", ])
+                        freq_NR <- cont_table["denominator", "1"] / sum(cont_table["denominator", ])
+                        fold_change <- freq_R / freq_NR
+                        log2FC <- log2(fold_change)
+                        
+                        fisher_test <- fisher.test(cont_table)
+                        
+                        cazy.frequency <- rbind(cazy.frequency, 
+                                                data.frame(
+                                                      n_total = sum(cont_table),
+                                                      gene = i,
+                                                      freq_R = freq_R,
+                                                      freq_NR = freq_NR,
+                                                      fold_change = fold_change,
+                                                      log2FC = log2FC,
+                                                      p_value = fisher_test$p.value,
+                                                      # odds_ratio = fisher_test$estimate,
+                                                      # CI_low = fisher_test$conf.int[1],
+                                                      # CI_high = fisher_test$conf.int[2],
+                                                      stringsAsFactors = FALSE
+                                                ))
+                  } else {
+                        message("Пропущен ген ", i, ": недостаточные данные в таблице сопряженности")
+                  }
+            }, error = function(e) {
+                  message("Ошибка для гена ", i, ": ", e$message)
+            })
+      }
+      
+      cazy.frequency <- cazy.frequency[cazy.frequency$fold_change != Inf,]
+      cazy.frequency <- cazy.frequency[cazy.frequency$fold_change != -Inf,]
+      cazy.frequency <- cazy.frequency[cazy.frequency$log2FC != -Inf,]
+      
+      cazy.frequency <- cazy.frequency[order(cazy.frequency$fold_change, decreasing = T),]
+      
+      rownames(cazy.frequency) <- NULL
+      
+      return(cazy.frequency)
+}
+```
+
+#### CAZy
+<p style="text-align: justify;">
+Analysis of the carbohydrate-active enzyme (CAZy) repertoire revealed a distinct functional capacity associated with positive immunotherapy outcome. Microbial markers linked to responders contained a significantly higher frequency of CAZy genes than non-responder-associated markers (Wilcoxon rank sum test, W = 19,802, p = 1.24e-07; Figure 20). Furthermore, Fisher's exact test identified 27 CAZy families significantly enriched in the responder group compared to only 3 in non-responders (logFC > |1|, adj. p < 0.05; Figure 21).
+<p>
+
+<p style="text-align: justify;">
+The enriched CAZy profile in responders indicates specialized adaptation for breakdown of complex dietary and host-derived carbohydrates. This includes polysaccharide lyases PL1, PL9, PL10, PL15 and PL33 along with glycoside hydrolases GH26, GH28, GH115 and GH130 involved in plant cell wall decomposition. Notably, we observed enrichment of mucin-degrading enzymes GH89, GH125, GH129 and GH171, which target key components of intestinal mucin glycans. The profile was complemented by carbohydrate esterases CE1, CE2, CE4, CE7, CE12 and CE17, alongside carbohydrate-binding modules CBM13, CBM32 and CBM67, collectively indicating sophisticated capability for complex carbohydrate breakdown.
+<p>
+
+<p style="text-align: justify;">
+Enrichment analysis further confirmed the overrepresentation of glycoside hydrolase families in responders (NES = 1.35, p = 0.02; Table 45 and Figure 21). The core enrichment comprised 47 GH families encompassing hemicellulases GH30, GH43, GH51, GH115, GH120, GH26, GH27 and GH113; involved to pectin degradation GH28, GH78, GH88 and GH105; and intestinal adaptation specialists GH29, GH95, GH33, GH89, GH125, GH129, GH2, GH20 and GH35. This functional arsenal also included enzymes for bacterial biofilm degradation GH32, GH66 and GH144, peptidoglycan cleavage GH23, GH24 and GH25, and chitin degradation GH18 and GH20, indicating superior competitive capacity within the gut ecosystem (Table 46).
+<p>
+
+<p style="text-align: justify;">
+Collectively, these results demonstrate that responder-associated microbes represent a highly efficient and competitive community for carbohydrate processing, strongly adapted to the rich and competitive environment of the mammalian colon. Their ability to utilize both dietary plant fibers and host mucin provides metabolic flexibility, while their arsenal of enzymes targeting bacterial cell walls and biofilms suggests enhanced competitive fitness.
+<p>
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+CAZy <- CAZy[rownames(CAZy) %in% ogu.markers$featureid,]
+CAZy.table <- merge(cbind(featureid = rownames(tax_table), tax_table), cbind(featureid = rownames(CAZy), CAZy), by = 1)
+
+datatable(CAZy.table, 
+          caption = "Table 43. Distribution of CAZy genes across markers.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+nCAZy <- as.data.frame(rowSums(CAZy))
+colnames(nCAZy) <- "n_cazy"
+
+ncazy.makers <- merge(ogu.markers, cbind(rownames(nCAZy), nCAZy), by = 1)
+ncazy.makers$biomarker[ncazy.makers$biomarker == "numerator"] <- "R"
+ncazy.makers$biomarker[ncazy.makers$biomarker == "denominator"] <- "NR"
+
+ncazy_plot <- ggplot(ncazy.makers, aes(biomarker, n_cazy, col = biomarker))+
+      stat_halfeye()+
+      xlab("Response")+
+      ylab("number of CAZy")+
+      theme_pubr()+
+      theme(legend.position = "none")+
+      scale_color_brewer(palette = "Set1")+
+      stat_compare_means(comparisons = list(c("R", "NR")), method = "wilcox")
+```
+
+```{r fig.width=3, fig.height=4}
+#| echo: false
+download_this(
+  ncazy_plot,
+  output_name = "ncazy_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=3, fig.height=4}
+#| echo: false
+#| fig-cap: "Figure 20. The boxplot shows nubmer of CAZy genes in marker OGU."
+ncazy_plot
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+wilcox.test(ncazy.makers$n_cazy[ncazy.makers$biomarker == "R"], 
+            ncazy.makers$n_cazy[ncazy.makers$biomarker == "NR"], 
+            alternative = "greater")
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+cazy.genes <- calculate_gene_associations(CAZy, ogu.markers)
+
+cazy.genes$p.adjusted <- p.adjust(cazy.genes$p_value, method = "BH")
+
+cazy_volcano <- EnhancedVolcano::EnhancedVolcano(cazy.genes,
+                lab = cazy.genes$gene, selectLab = cazy.genes$gene[cazy.genes$p.adjusted < 0.05 & abs(cazy.genes$log2FC) > 1],
+                x = 'log2FC',
+                y = 'p.adjusted', pCutoff = 0.05, 
+                subtitle = "", 
+                title = "R vs NR ", 
+                ###########################
+                labSize = 4,
+                drawConnectors = TRUE, 
+                widthConnectors = 0.75, 
+                gridlines.major = FALSE, 
+                gridlines.minor = FALSE, 
+                ylim = c(0,5.8))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(cazy.genes[-1], 
+          caption = "Table 44. Differential analysis of CAZy genes across markers.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.height=7.5, fig.width=6.5}
+#| echo: false
+#| message: false
+#| warning: false
+download_this(
+  cazy_volcano,
+  output_name = "cazy_volcano",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.height=7.5, fig.width=6.5}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-cap: "Figure 21. Volcano plot results with CAZy database."
+cazy_volcano
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+set.seed(1143)
+
+vec_cazy <- -log10(cazy.genes$p_value)*sign(cazy.genes$log2FC)
+names(vec_cazy) <- cazy.genes$gene
+vec_cazy <- sort(vec_cazy, decreasing = T)
+
+gsea_cazy <- GSEA(vec_cazy, TERM2GENE = CAZy_sets[c(1,2)], eps = 0, pAdjustMethod = "BH", pvalueCutoff = 0.05)
+
+gsea_cazy_df <- as.data.frame(gsea_cazy)
+rownames(gsea_cazy_df) <- 1:nrow(gsea_cazy_df)
+gsea_cazy_df <- gsea_cazy_df[-2]
+gsea_cazy_df <- gsea_cazy_df[order(gsea_cazy_df$NES, decreasing = T),]
+
+core_enrichment_GH <- unlist(str_split(gsea_cazy_df$core_enrichment, pattern = "\\/"))
+core_enrichment_GH <- merge(data.frame(core_enrichment_GH), CAZy_sets[c(2,3)], by = 1)
+colnames(core_enrichment_GH) <- c("family", "function")
+core_enrichment_GH <- core_enrichment_GH[order(core_enrichment_GH$family),]
+
+gsea_cazy_plot <- gseaNb(gsea_cazy, 
+                         geneSetID = gsea_cazy_df$ID, 
+                         htCol = c("#A50F15", "#08519C"))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(gsea_cazy_df[1:8], 
+          caption = "Table 45. GSEA results with CAZy database.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(core_enrichment_GH, 
+          caption = "Table 46. GSEA results with CAZy database: core enrichment.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.height=4.5, fig.width=4.5}
+#| echo: false
+download_this(
+  gsea_cazy_plot,
+  output_name = "gsea_cazy_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=4.5, fig.height=4}
+#| echo: false
+#| fig-cap: "Figure 22. GSEA results with CAZy database."
+gsea_cazy_plot
+```
+
+#### KEGG
+<p style="text-align: justify;">
+Functional annotation based on KEGG orthology revealed a distinct functional potential between the R and NR groups. A significantly higher overall number of KEGG orthology groups was observed in the R group compared to the NR group (Figure 23; Wilcoxon rank sum test, W = 17810, p-value = 0.001227). Differential abundance analysis using a Fisher's exact test identified 43 significantly enriched genes in the R group and 42 in the NR group (logFC > |1|, adj. p < 0.05, Table 48, Figure 24). Subsequent gene-set enrichment analysis (GSEA; NES > |1|, adj. p < 0.05; Table 49, Figure 25) further delineated this functional divergence. The R group exhibited a pronounced upregulation of pathways central to metabolic processing, specifically encompassing ko00340 (Histidine metabolism), ko01210 (2-Oxocarboxylic acid metabolism), ko00052 (Galactose metabolism), ko00040 (Pentose and glucuronate interconversions), ko01230 (Biosynthesis of amino acids), ko00220 (Arginine biosynthesis), ko00500 (Starch and sucrose metabolism), ko00290 (Valine, leucine and isoleucine biosynthesis), and ko01110 (Biosynthesis of secondary metabolites). In contrast, the NR group was characterized by a significant enrichment of pathways fundamental to genetic information processing and cellular maintenance, namely ko00230 (Purine metabolism), ko01232 (Nucleotide metabolism), and ko03010 (Ribosome). This functional signature suggests that the R-group microbiota is primed for active degradation of complex dietary substrates and biosynthesis of essential metabolites, whereas the NR community exhibits a profile more focused on core cellular maintenance and replication.
+<p>
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+KEGG.table <- merge(cbind(featureid = rownames(tax_table), tax_table), cbind(featureid = rownames(KEGG), KEGG), by = 1)
+
+datatable(KEGG.table, 
+          caption = "Table 47. Distribution of KEGG ortologic groups across markers.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+nKEGG <- as.data.frame(rowSums(KEGG))
+colnames(nKEGG) <- "n_kegg"
+
+nkegg.makers <- merge(ogu.markers, cbind(rownames(nKEGG), nKEGG), by = 1)
+nkegg.makers$biomarker[nkegg.makers$biomarker == "numerator"] <- "R"
+nkegg.makers$biomarker[nkegg.makers$biomarker == "denominator"] <- "NR"
+
+nkegg_plot <- ggplot(nkegg.makers, aes(biomarker, n_kegg, col = biomarker))+
+      stat_halfeye()+
+      xlab("Response")+
+      ylab("number of KEGG")+
+      theme_pubr()+
+      theme(legend.position = "none")+
+      scale_color_brewer(palette = "Set1")+
+      # facet_wrap(~phylum)+
+      stat_compare_means(comparisons = list(c("R", "NR")), method = "wilcox")
+```
+
+```{r fig.width=3, fig.height=4}
+#| echo: false
+download_this(
+  nkegg_plot,
+  output_name = "nkegg_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=3, fig.height=4}
+#| echo: false
+#| fig-cap: "Figure 23. The boxplot shows nubmer of KEGG orthology groups in marker OGU."
+nkegg_plot
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+wilcox.test(nkegg.makers$n_kegg[nkegg.makers$biomarker == "R"], 
+            nkegg.makers$n_kegg[nkegg.makers$biomarker == "NR"], 
+            alternative = "greater")
+```
+
+```{r}
+#| include: false
+KEGG.filtered <- KEGG[colSums(KEGG) > 100]
+
+kegg.genes <- calculate_gene_associations(KEGG.filtered, ogu.markers)
+kegg.genes$p.adjusted <- p.adjust(kegg.genes$p_value, method = "BH")
+
+as.factor(kegg.genes$gene[kegg.genes$log2FC > 1 & kegg.genes$p.adjusted < 0.05])
+
+kegg_volcano <- EnhancedVolcano::EnhancedVolcano(kegg.genes,
+                lab = kegg.genes$gene, selectLab = kegg.genes$gene[kegg.genes$p.adjusted < 0.05 & abs(kegg.genes$log2FC) > 1],
+                x = 'log2FC',
+                y = 'p.adjusted', pCutoff = 0.05, 
+                subtitle = "", 
+                title = "R vs NR ", 
+                ###########################
+                labSize = 3.5,
+                drawConnectors = TRUE, 
+                widthConnectors = 0.75, 
+                gridlines.major = TRUE, 
+                gridlines.minor = TRUE,
+                ylim = c(0,7.2))
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(kegg.genes[-1], 
+          caption = "Table 48. Differential analysis of KEGG orthologic groups across markers.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.height=7.5, fig.width=6.5}
+#| echo: false
+#| message: false
+#| warning: false
+download_this(
+  kegg_volcano,
+  output_name = "kegg_volcano",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.height=7.5, fig.width=6.5}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-cap: "Figure 24. Volcano plot results with KEGG database."
+kegg_volcano
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+set.seed(13)
+
+vec_kegg <- -log10(kegg.genes$p_value)*sign(kegg.genes$log2FC)
+names(vec_kegg) <- kegg.genes$gene
+vec_kegg <- sort(vec_kegg, decreasing = T)
+
+gsea_kegg <- gseKEGG(geneList = vec_kegg, organism = "ko", eps = 0, pvalueCutoff = 0.05)
+
+gsea_kegg_df <- as.data.frame(gsea_kegg)
+rownames(gsea_kegg_df) <- 1:nrow(gsea_kegg_df)
+gsea_kegg_df <- gsea_kegg_df[order(gsea_kegg_df$NES, decreasing = T),]
+
+rownames(gsea_kegg_df) <- NULL
+
+gsea_kegg_plot <- ridgeplot(gsea_kegg) + labs(x = "enrichment distribution")
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+datatable(gsea_kegg_df[1:9], 
+          caption = "Table 49. GSEA results with KEGG database.",
+          style = "bootstrap5", 
+          extensions = 'Buttons', 
+          options = list(dom = 'lBfrtip',
+                         buttons = c('csv', 'excel')))
+```
+
+```{r fig.width=8, fig.height=6.5}
+#| echo: false
+#| message: false
+#| warning: false
+download_this(
+  gsea_kegg_plot,
+  output_name = "gsea_kegg_plot",
+  output_extension = ".pdf",
+  button_label = "PDF",
+  button_type = "primary"
+)
+```
+
+```{r fig.width=8, fig.height=6.5}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-cap: "Figure 25. GSEA results with KEGG database."
+gsea_kegg_plot
+```
