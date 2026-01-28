@@ -44,8 +44,16 @@ In this study, we used open access data from the NCBI/EBI Sequence Read Archives
 
 [Evgenii Olekhnovich](https://scholar.google.ru/citations?user=RA9ItlsAAAAJ&hl=ru) (Lopukhin FRCC PCM).
 
-## Preprint
-A preprint of this work is available on bioRxiv: https://www.biorxiv.org/content/10.1101/2025.05.07.652660v2.
+## Related Publications
+
+- **Olekhnovich et al.** *Consistent Stool Metagenomic Biomarkers Associated with the Response To Melanoma Immunotherapy.* mSystems 8.2 (2023).
+  DOI: [https://doi.org/10.1128/msystems.01023-22](https://doi.org/10.1128/msystems.01023-22)
+
+- **Zakharevich et al.** *Systemic metabolic depletion of gut microbiome undermines responsiveness to melanoma immunotherapy.* Life Science Alliance 7.5 (2024).  
+  DOI: [https://doi.org/10.26508/lsa.202302480](https://doi.org/10.26508/lsa.202302480)
+
+- **Orletskaia et al.** *Ecological and functional stratification of the stool microbiome predicts response to immune checkpoint inhibitors across cancer types.* bioRxiv (2025).  
+  DOI: [https://doi.org/10.1101/2025.05.07.652660v2](https://www.biorxiv.org/content/10.1101/2025.05.07.652660v2)
 
 ## Findings
 Financial support for this study was provided by the Russian Science Foundation under the grant #22-75-10029 (https://rscf.ru/project/22-75-10029/).
