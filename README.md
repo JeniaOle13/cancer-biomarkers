@@ -26,8 +26,6 @@ markers-report.qmd          # Quarto qmd file
 ## Data Availability
 In this study, we used open access data from the NCBI/EBI Sequence Read Archives, identified by the following BioProjects accession numbers: PRJNA397906, PRJEB22893, PRJNA399742, PRJNA770295, PRJEB43119, PRJNA762360, PRJNA1011235, PRJNA615114, PRJNA866654, PRJNA494824, PRJEB49516. OGUs catalog assembly pipeline was described in https://github.com/JeniaOle13/Cancer_MAGs. All initial MAGs sequences were deposited in NCBI under accession PRJNA1196825.
 
-The catalog of 3,816 metagenome-assembled genomes (MAGs) generated and used in this analysis is publicly available at https://github.com/JeniaOle13/Cancer_MAGs. This repository contains the non-redundant genomic catalog in FASTA format along with associated metadata, enabling reproducibility and further exploration of the gut microbiome in cancer immunotherapy.
-
 ## Studies links:
 1) [Frankel, Arthur E., et al. "Metagenomic shotgun sequencing and unbiased metabolomic profiling identify specific human gut microbiota and metabolites associated with immune checkpoint therapy efficacy in melanoma patients." Neoplasia 19.10 (2017): 848-855.](https://www.sciencedirect.com/science/article/pii/S1476558617302385)
 2) [Peng, Zhi, et al. "The gut microbiome is associated with clinical response to anti–PD-1/PD-L1 immunotherapy in gastrointestinal cancer." Cancer Immunology Research 8.10 (2020): 1251-1261.](https://aacrjournals.org/cancerimmunolres/article/8/10/1251/466881/The-Gut-Microbiome-Is-Associated-with-Clinical)
@@ -45,6 +43,12 @@ The catalog of 3,816 metagenome-assembled genomes (MAGs) generated and used in t
 [Vera Kanaeva](https://scholar.google.ru/citations?hl=ru&user=Ie7RMLAAAAAJ) (Lopukhin FRCC PCM, MIPT).
 
 [Evgenii Olekhnovich](https://scholar.google.ru/citations?user=RA9ItlsAAAAJ&hl=ru) (Lopukhin FRCC PCM).
+
+## Realted resources
+The catalog of 3,816 metagenome-assembled genomes (MAGs) generated and used in this analysis is publicly available at https://github.com/JeniaOle13/Cancer_MAGs. This repository contains the non-redundant genomic catalog in FASTA format along with associated metadata, enabling reproducibility and further exploration of the gut microbiome in cancer immunotherapy.
+
+## Preprint
+A preprint of this work is available on bioRxiv: https://www.biorxiv.org/content/10.1101/2025.05.07.652660v2.
 
 ## Findings
 Financial support for this study was provided by the Russian Science Foundation under the grant #22-75-10029 (https://rscf.ru/project/22-75-10029/).
