@@ -9,9 +9,10 @@
 🔗 **Access the full study report:** [https://jeniaole13.github.io/cancer-biomarkers/](https://jeniaole13.github.io/cancer-biomarkers/)
 
 ## Overview  
-This repository contains the computational workflows and scripts used to analyze 624 stool metagenomes from 11 cohorts to identify microbial biomarkers of cancer immunotherapy response. Key findings include:  
-- **Blautia species** as keystone taxa linked to immunotherapy success.  
-- **Oral/food-derived microbes** (e.g., *Veillonella*, *Klebsiella*) as predictors of non-response.
+This project presents a complete bioinformatics pipeline for identifying gut microbial biomarkers associated with response to immunotherapy in cancer patients. Based on 976 stool metagenomes from 14 public studies, we constructed a catalog of 3,816 non-redundant metagenome-assembled genomes (MAGs), which were used for taxonomic and functional profiling. This study aims to discover gut microbial signatures predictive of immunotherapy success by identifying specific operational genomic units (OGUs) linked to patient response (R) or non-response (NR). We further investigate how microbial prevalence influences outcomes, characterize the functional profiles (CAZy, KEGG) of these marker taxa.
+
+## Results
+Analysis of 3,816 metagenome-assembled genomes identified 350 microbial markers, with 149 enriched in responders and 201 in non-responders. Fusicatenibacter saccharivorans emerged as a consistent pan-cancer biomarker for positive response, while non-responders showed enrichment of Proteobacteria and taxa originating from oral/food sources. Functionally, responder-associated microbes possessed expanded CAZy repertoires for complex carbohydrate and mucin degradation.
 
 ## Repository Structure
 ```
