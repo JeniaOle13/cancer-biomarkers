@@ -44,9 +44,6 @@ In this study, we used open access data from the NCBI/EBI Sequence Read Archives
 
 [Evgenii Olekhnovich](https://scholar.google.ru/citations?user=RA9ItlsAAAAJ&hl=ru) (Lopukhin FRCC PCM).
 
-## Realted resources
-The catalog of 3,816 metagenome-assembled genomes (MAGs) generated and used in this analysis is publicly available at https://github.com/JeniaOle13/Cancer_MAGs. This repository contains the non-redundant genomic catalog in FASTA format along with associated metadata, enabling reproducibility and further exploration of the gut microbiome in cancer immunotherapy.
-
 ## Preprint
 A preprint of this work is available on bioRxiv: https://www.biorxiv.org/content/10.1101/2025.05.07.652660v2.
 
