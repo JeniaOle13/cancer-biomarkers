@@ -26,6 +26,22 @@ markers-report.qmd          # Quarto qmd file
 ## Data Availability
 In this study, we used open access data from the NCBI/EBI Sequence Read Archives, identified by the following BioProjects accession numbers: PRJNA397906, PRJEB22893, PRJNA399742, PRJNA770295, PRJEB43119, PRJNA762360, PRJNA1011235, PRJNA615114, PRJNA866654, PRJNA494824, PRJEB49516. OGUs catalog assembly pipeline was described in https://github.com/JeniaOle13/Cancer_MAGs. All initial MAGs sequences were deposited in NCBI under accession PRJNA1196825.
 
+## Studies links:
+1) [Frankel, Arthur E., et al. "Metagenomic shotgun sequencing and unbiased metabolomic profiling identify specific human gut microbiota and metabolites associated with immune checkpoint therapy efficacy in melanoma patients." Neoplasia 19.10 (2017): 848-855.](https://www.sciencedirect.com/science/article/pii/S1476558617302385)
+2) [Peng, Zhi, et al. "The gut microbiome is associated with clinical response to anti–PD-1/PD-L1 immunotherapy in gastrointestinal cancer." Cancer Immunology Research 8.10 (2020): 1251-1261.](https://aacrjournals.org/cancerimmunolres/article/8/10/1251/466881/The-Gut-Microbiome-Is-Associated-with-Clinical)
+3) [Gopalakrishnan, Vancheswaran, et al. "Gut microbiome modulates response to anti–PD-1 immunotherapy in melanoma patients." Science 359.6371 (2018): 97-103.](https://www.science.org/doi/10.1126/science.aan4236)
+4) [Matson, Vyara, et al. "The commensal microbiome is associated with anti–PD-1 efficacy in metastatic melanoma patients." Science 359.6371 (2018): 104-108.](https://www.science.org/doi/10.1126/science.aao3290)
+5) [Baruch, Erez N., et al. "Fecal microbiota transplant promotes response in immunotherapy-refractory melanoma patients." Science 371.6529 (2021): 602-609.](https://www.science.org/doi/10.1126/science.abb5920)
+6) [Davar, Diwakar, et al. "Fecal microbiota transplant overcomes resistance to anti–PD-1 therapy in melanoma patients." Science 371.6529 (2021): 595-602.](https://www.science.org/doi/10.1126/science.abf3363)
+7) [Spencer, Christine N., et al. "Dietary fiber and probiotics influence the gut microbiome and melanoma immunotherapy response." Science 374.6575 (2021): 1632-1640.](https://www.science.org/doi/10.1126/science.aaz7015?url_ver=Z39.88-2003&rfr_id=ori:rid:crossref.org&rfr_dat=cr_pub%20%200pubmed)
+8) [Lee, Karla A., et al. "Cross-cohort gut microbiome associations with immune checkpoint inhibitor response in advanced melanoma." Nature Medicine 28.3 (2022): 535-544.](https://www.nature.com/articles/s41591-022-01695-5)
+9) [McCulloch, John A., et al. "Intestinal microbiota signatures of clinical response and immune-related adverse events in melanoma patients treated with anti-PD-1." Nature Medicine 28.3 (2022): 545-556.](https://www.nature.com/articles/s41591-022-01698-2)
+10) [Tsakmaklis, Anastasia, et al. "TIGIT+ NK cells in combination with specific gut microbiota features predict response to checkpoint inhibitor therapy in melanoma patients." BMC Cancer 23.1 (2023): 1160.](https://bmccancer.biomedcentral.com/articles/10.1186/s12885-023-11551-5)
+11) [Routy, Bertrand, et al. "Fecal microbiota transplantation plus anti-PD-1 immunotherapy in advanced melanoma: a phase I trial." Nature Medicine 29.8 (2023): 2121-2132.](https://www.nature.com/articles/s41591-023-02453-x)
+12) [Liu, Ben, et al. "Exploring gut microbiome in predicting the efficacy of immunotherapy in non-small cell lung cancer." Cancers 14.21 (2022): 5401.](https://www.mdpi.com/2072-6694/14/21/5401)
+13) [Heshiki, Yoshitaro, et al. "Predictable modulation of cancer treatment outcomes by the gut microbiota." Microbiome 8 (2020): 1-14.](https://microbiomejournal.biomedcentral.com/articles/10.1186/s40168-020-00811-2)
+14) [Gunjur, Ashray, et al. "A gut microbial signature for combination immune checkpoint blockade across cancer types." Nature Medicine 30.3 (2024): 797-809.](https://www.nature.com/articles/s41591-024-02823-z)
+
 ## Authors:
 [Vera Kanaeva](https://scholar.google.ru/citations?hl=ru&user=Ie7RMLAAAAAJ) (Lopukhin FRCC PCM, MIPT).
 
