@@ -1,5 +1,5 @@
 # Cancer-Immunotherapy-Microbiome-Analysis  
-**Code repository for the manuscript:** *"Non-Intestinal Microbial Signatures in Stool as Predictors of Cancer Immunotherapy Outcome"*
+**Code repository for the manuscript:** *Ecological and functional stratification of the stool microbiome predicts response to immune checkpoint inhibitors across cancer types*
 
 ![](https://github.com/JeniaOle13/cancer-biomarkers/blob/main/figure/sample_map.jpg)
 *Global distribution of collected samples (n=624) across countries. Circle size represents sample count per region, while color indicates the proportion of patients R - responsive (or NR - non-responsive) to immunotherapy*
