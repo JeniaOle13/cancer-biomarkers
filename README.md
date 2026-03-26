@@ -1,7 +1,7 @@
 # Cancer-Immunotherapy-Microbiome-Analysis  
 **Code repository for the manuscript:** *Ecological and functional stratification of the stool microbiome predicts response to immune checkpoint inhibitors across cancer types*
 
-![](https://github.com/JeniaOle13/cancer-biomarkers/blob/main/figure/sample_map.jpg)
+![](https://github.com/JeniaOle13/cancer-biomarkers/blob/main/figures/sample_map.jpg)
 *Global distribution of collected samples (n=624) across countries. Circle size represents sample count per region, while color indicates the proportion of patients R - responsive (or NR - non-responsive) to immunotherapy*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
