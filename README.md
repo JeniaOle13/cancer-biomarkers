@@ -18,7 +18,10 @@ Analysis of 3,816 metagenome-assembled genomes (MAGs), dereplicated into operati
 ```
 data/                       # project data
 ├── songbird/               # Songbird analysis results for each dataset
+figures                     # project figures
 markers-report_files/       # Files for Quarto report
+results/                    # Maaslin2 results
+LICENSE                     
 README.md                   # Repository description file
 markers-report.html         # Quarto HTML file
 markers-report.qmd          # Quarto qmd file
