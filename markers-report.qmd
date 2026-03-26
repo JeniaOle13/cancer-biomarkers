@@ -6,11 +6,13 @@ editor: source
 <p style="text-align: justify;">
 This document provides the complete supplementary materials for the manuscript  
 **Ecological and functional stratification of the stool microbiome predicts response to immune checkpoint inhibitors across cancer types**.  
-All code, intermediate data, and results presented here are also available in the accompanying GitHub repository:  
-[https://github.com/JeniaOle13/cancer-biomarkers](https://github.com/JeniaOle13/cancer-biomarkers) (DOI: [to be added]).
+<p>
 
+<p style="text-align: justify;">
 The repository contains the full Quarto document used to generate this supplementary information, along with all input data and scripts required to reproduce the analyses. The current file is intended as a self‑contained summary of the supplementary results and methods referenced in the main article.
+<p>
 
+<p style="text-align: justify;">
 For the full reproducible analysis, please refer to the Quarto source file and the data folder in the GitHub repository. For any questions, contact the corresponding author.
 <p>
 
