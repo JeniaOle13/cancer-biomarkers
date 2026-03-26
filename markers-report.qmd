@@ -274,7 +274,7 @@ sample_map <- ggplot(data = loc) +
         panel.border = element_rect(fill = NA))
 ```
 
-[Figure 1](figure/sample_map.pdf)
+[Figure 1](figures/sample_map.pdf)
 ```{r fig.width=15, fig.height=6}
 #| echo: false
 #| message: false
@@ -312,8 +312,8 @@ datatable(mag.statistic,
                          buttons = c('csv', 'excel')))
 ```
 
-[Figure 2](figure/catalog_picture.png)
-![Figure 2](figure/catalog_picture.png)
+[Figure 2](figures/catalog_picture.png)
+![Figure 2](figures/catalog_picture.png)
 Figure 2. An approximate maximum likelihood phylogenetic tree was constructed using CheckM, based on 43 amino acid (AA) marker sequences, and included 3,816 metagenome-assembled genomes (MAGs) derived from stool metagenomes of cancer patients. The branches of the tree are colored to indicate bacterial or archaeal affiliation, while the inner ring shows phylum-level taxonomic annotations that correspond to the phylogenetic relationships. The outer ring provides statistics about the assembly of the MAGs.
 
 # Taxonomy structure
@@ -1515,12 +1515,12 @@ maaslin_phylum_heatmap <- pheatmap::pheatmap(maaslin_phylum.nes,
                    border_color = "grey60", 
                    fontsize_number = 12)
 
-# pdf(file = "figure/maaslin_phylum_heatmap.pdf", width = 5, height = 3)
+# pdf(file = "figures/maaslin_phylum_heatmap.pdf", width = 5, height = 3)
 # maaslin_phylum_heatmap
 # dev.off()
 ```
 
-[Figure 8](figure/maaslin_phylum_heatmap.pdf)
+[Figure 8](figures/maaslin_phylum_heatmap.pdf)
 
 ```{r fig.width=5, fig.height=3}
 #| echo: false
@@ -1576,12 +1576,12 @@ maaslin_genus_heatmap <- pheatmap::pheatmap(maaslin_genus.nes,
                    border_color = "grey60", 
                    fontsize_number = 12)
 
-# pdf(file = "figure/maaslin_genus_heatmap.pdf", width = 5, height = 5)
+# pdf(file = "figures/maaslin_genus_heatmap.pdf", width = 5, height = 5)
 # maaslin_genus_heatmap
 # dev.off()
 ```
 
-[Figure 9](figure/maaslin_genus_heatmap.pdf)
+[Figure 9](figures/maaslin_genus_heatmap.pdf)
 
 ```{r fig.width=5, fig.height=5}
 #| echo: false
@@ -1637,12 +1637,12 @@ maaslin_species_heatmap <- pheatmap::pheatmap(maaslin_species.nes,
                    border_color = "grey60", 
                    fontsize_number = 12)
 
-# pdf(file = "figure/maaslin_species_heatmap.pdf", width = 6, height = 5)
+# pdf(file = "figures/maaslin_species_heatmap.pdf", width = 6, height = 5)
 # maaslin_species_heatmap
 # dev.off()
 ```
 
-[Figure 10](figure/maaslin_species_heatmap.pdf)
+[Figure 10](figures/maaslin_species_heatmap.pdf)
 
 ```{r fig.width=6, fig.height=5}
 #| echo: false
