@@ -9,10 +9,9 @@
 🔗 **Access the full study report:** [https://jeniaole13.github.io/cancer-biomarkers/](https://jeniaole13.github.io/cancer-biomarkers/)
 
 ## Overview  
-This repository provides a reproducible bioinformatics pipeline for identifying gut microbial biomarkers of immunotherapy response in cancer. We assembled 3,816 non‑redundant metagenome‑assembled genomes (MAGs) from 976 stool metagenomes and defined operational genomic units (OGUs) for integrated taxonomic and functional analysis. Analyzing 624 baseline samples from 11 studies, we show that microbial prevalence is a key predictor of response, derive a robust log‑ratio biomarker, and characterize the functional (CAZy, KEGG) and ecological (oral/food origin) features of response‑associated microbes. All code, data, and the complete supplementary information are provided for full reproducibility.
+This repository provides a reproducible bioinformatics pipeline for studying how gut microbial community properties relate to immunotherapy response in cancer. Instead of focusing on individual "good" or "bad" taxa, we examine broader ecological patterns — in particular, the Anna Karenina principle for microbiomes, which posits that responder-associated communities tend to be stable and resident-dominated, whereas non-responders show more variable, disrupted configurations.
 
-## Results
-Analysis of 3,816 metagenome-assembled genomes (MAGs), dereplicated into operational genomic units (OGUs), identified 350 microbial markers differentially associated with immunotherapy response: 149 enriched in responders (R) and 201 in non‑responders (NR). Fusicatenibacter saccharivorans emerged as a consistent pan‑cancer biomarker for positive response, whereas NR were characterized by enrichment of Proteobacteria and taxa of oral or food origin. Functionally, responder‑associated OGUs exhibited expanded CAZy repertoires, particularly glycoside hydrolases involved in complex carbohydrate and mucin degradation, supporting a metabolic niche adapted to the gut ecosystem.
+We assembled 3,816 non‑redundant metagenome‑assembled genomes (MAGs) from 951 stool metagenomes and grouped them into operational genomic units (OGUs) for joint taxonomic and functional analysis. Applying this framework to 624 baseline samples from 11 multicancer cohorts, we show that the population prevalence of a taxon is positively associated with clinical benefit, independently of its abundance. From this signal we derive a robust log‑ratio biomarker and characterize the functional potential (CAZy families involved in carbohydrate and mucin degradation; amino acid biosynthesis pathways) and ecological origin (enrichment of oral and food‑derived microbes in non‑responders) of response‑associated taxa. All analysis code, data products, and supplementary information are provided to ensure full reproducibility and to allow others to test these findings on their own datasets.
 
 ## Repository Structure
 ```
@@ -50,8 +49,11 @@ In this study, we used open access data from the NCBI/EBI Sequence Read Archives
 ## Publication
 This repository contains the complete analytical code for the research paper:
 
-- **Orletskaia et al.** *Ecological and functional stratification of the stool microbiome predicts response to immune checkpoint inhibitors across cancer types.* bioRxiv (2025).  
-  DOI: [https://doi.org/10.1101/2025.05.07.652660v2](https://www.biorxiv.org/content/10.1101/2025.05.07.652660v2)
+- **Orletskaia and Olekhnovich.** *Ecological and functional stratification of the stool microbiome predicts response to immune checkpoint inhibitors across cancer types.* Computational and Structural Biotechnology Journal 35.1 (2026): 0065.
+  DOI: [https://doi.org/10.34133/csbj.0065](https://spj.science.org/doi/10.34133/csbj.0065)
+  
+- (Early version) **Orletskaia and Olekhnovich** *Non-Intestinal Microbial Signatures in Stool as Predictors of Cancer Immunotherapy Outcome.* bioRxiv (2025).  
+  DOI: [https://doi.org/10.1101/2025.05.07.652660v1](https://www.biorxiv.org/content/10.1101/2025.05.07.652660v1)
 
 ## Related Publications
 
